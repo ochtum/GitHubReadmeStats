@@ -15,6 +15,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - 言語集計カード: `top-languages.svg`
 - プロフィールサマリーカード: `stats.svg`
 - リポジトリカード: `pins/<owner>-<repo>.svg`
+- `cards-config.json` で言語色の上書き (`HEX`, `OKLCH` など) と、リポジトリごとのアイコン指定が可能
 - リポジトリカードに traffic 指標 (`Git Clones`, `Unique cloners`, `Total views`, `Unique visitors`) を表示
 - README セクション自動更新 (`--update-readme`)
 
@@ -74,14 +75,40 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 ```json
 {
   "username": "ochtum",
+  "languageColors": {
+    "JavaScript": "#f1e05a",
+    "TypeScript": "oklch(0.72 0.16 248)"
+  },
+  "languageIcons": {
+    "JavaScript": "./assets/icons/javascript.svg",
+    "TypeScript": "./assets/icons/typescript.svg"
+  },
   "repositories": [
     "ochtum/CaptureScreenMCP",
-    "ochtum/SlackEmojiBookmaker",
+    {
+      "owner": "ochtum",
+      "name": "SlackEmojiBookmaker",
+      "languageColor": "#ffd54f",
+      "languageIcon": "./assets/icons/js-alt.png",
+      "icon": "./assets/icons/slack-emoji.png"
+    },
     "microsoft/vscode-generator-code",
-    { "owner": "tldraw", "name": "tldraw" }
+    {
+      "owner": "tldraw",
+      "name": "tldraw",
+      "icon": "./assets/icons/tldraw.svg"
+    }
   ]
 }
 ```
+
+補足:
+
+- `languageColors`: 言語名単位の色上書き（`PrimaryLanguage` に一致したとき適用）
+- `repositories[].languageColor`: そのリポジトリだけの色上書き（`languageColors` がない場合に適用）
+- `languageIcons`: 言語名単位のアイコン上書き（`PrimaryLanguage` に一致したとき適用）
+- `repositories[].languageIcon`: そのリポジトリだけの言語アイコン上書き（`languageIcons` がない場合に適用）
+- `repositories[].icon`: アイコン指定（`cards-config.json` からの相対パス、絶対パス、`https://...`、`data:image/...` をサポート）
 
 ## CLI Options
 

@@ -16,8 +16,10 @@ internal static class CardsConfigLoader
 
         string username = ReadUsername(root, defaultUsername);
         IReadOnlyList<PinRepository> repositories = ReadRepositories(root);
+        IReadOnlyDictionary<string, string> languageColorOverrides = ReadLanguageColorOverrides(root);
+        IReadOnlyDictionary<string, string> languageIconOverrides = ReadLanguageIconOverrides(root);
 
-        return new CardsConfig(username, repositories);
+        return new CardsConfig(username, repositories, languageColorOverrides, languageIconOverrides);
     }
 
     private static string ReadUsername(JsonElement root, string defaultUsername)
@@ -64,6 +66,69 @@ internal static class CardsConfigLoader
         return result;
     }
 
+    private static IReadOnlyDictionary<string, string> ReadLanguageColorOverrides(JsonElement root)
+    {
+        if (!root.TryGetProperty("languageColors", out JsonElement colorsElement) ||
+            colorsElement.ValueKind != JsonValueKind.Object)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonProperty property in colorsElement.EnumerateObject())
+        {
+            string key = property.Name.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                continue;
+            }
+
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            string? value = property.Value.GetString()?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            result[key] = value;
+        }
+
+        return result;
+    }
+
+    private static IReadOnlyDictionary<string, string> ReadLanguageIconOverrides(JsonElement root)
+    {
+        if (!root.TryGetProperty("languageIcons", out JsonElement iconsElement) ||
+            iconsElement.ValueKind != JsonValueKind.Object)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonProperty property in iconsElement.EnumerateObject())
+        {
+            string key = property.Name.Trim();
+            if (string.IsNullOrWhiteSpace(key) || property.Value.ValueKind != JsonValueKind.String)
+            {
+                continue;
+            }
+
+            string? value = property.Value.GetString()?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            result[key] = value;
+        }
+
+        return result;
+    }
+
     private static PinRepository? ParseRepository(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.String)
@@ -75,6 +140,9 @@ internal static class CardsConfigLoader
         {
             string? owner = null;
             string? name = null;
+            string? languageColorOverride = null;
+            string? languageIconOverride = null;
+            string? icon = null;
 
             if (element.TryGetProperty("owner", out JsonElement ownerElement) && ownerElement.ValueKind == JsonValueKind.String)
             {
@@ -90,14 +158,46 @@ internal static class CardsConfigLoader
                 name = repoElement.GetString();
             }
 
+            languageColorOverride = ReadStringProperty(element, "languageColor")
+                ?? ReadStringProperty(element, "language_color")
+                ?? ReadStringProperty(element, "language-color");
+
+            languageIconOverride = ReadStringProperty(element, "languageIcon")
+                ?? ReadStringProperty(element, "language_icon")
+                ?? ReadStringProperty(element, "language-icon")
+                ?? ReadStringProperty(element, "languageIconPath")
+                ?? ReadStringProperty(element, "language_icon_path")
+                ?? ReadStringProperty(element, "language-icon-path");
+
+            icon = ReadStringProperty(element, "icon")
+                ?? ReadStringProperty(element, "iconPath")
+                ?? ReadStringProperty(element, "icon_path")
+                ?? ReadStringProperty(element, "icon-path");
+
             if (string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(name) && name!.Contains('/'))
             {
-                return ParseOwnerAndName(name);
+                PinRepository? parsed = ParseOwnerAndName(name);
+                if (parsed is null)
+                {
+                    return null;
+                }
+
+                return parsed with
+                {
+                    LanguageColorOverride = NormalizeNullable(languageColorOverride),
+                    LanguageIconOverride = NormalizeNullable(languageIconOverride),
+                    Icon = NormalizeNullable(icon),
+                };
             }
 
             if (!string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(name))
             {
-                return new PinRepository(owner.Trim(), name.Trim());
+                return new PinRepository(
+                    owner.Trim(),
+                    name.Trim(),
+                    NormalizeNullable(languageColorOverride),
+                    NormalizeNullable(languageIconOverride),
+                    NormalizeNullable(icon));
             }
         }
 
@@ -119,6 +219,26 @@ internal static class CardsConfigLoader
             return null;
         }
 
-        return new PinRepository(segments[0], segments[1]);
+        return new PinRepository(segments[0], segments[1], null, null, null);
+    }
+
+    private static string? ReadStringProperty(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out JsonElement element) || element.ValueKind != JsonValueKind.String)
+        {
+            return null;
+        }
+
+        return element.GetString();
+    }
+
+    private static string? NormalizeNullable(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return value.Trim();
     }
 }

@@ -46,6 +46,9 @@ internal sealed class UserNode
     [JsonPropertyName("name")]
     public string? Name { get; init; }
 
+    [JsonPropertyName("location")]
+    public string? Location { get; init; }
+
     [JsonPropertyName("createdAt")]
     public DateTimeOffset CreatedAt { get; init; }
 
@@ -75,6 +78,24 @@ internal sealed class ContributionCalendarNode
 {
     [JsonPropertyName("totalContributions")]
     public int TotalContributions { get; init; }
+
+    [JsonPropertyName("weeks")]
+    public List<ContributionWeekNode>? Weeks { get; init; }
+}
+
+internal sealed class ContributionWeekNode
+{
+    [JsonPropertyName("contributionDays")]
+    public List<ContributionDayNode>? ContributionDays { get; init; }
+}
+
+internal sealed class ContributionDayNode
+{
+    [JsonPropertyName("date")]
+    public string? Date { get; init; }
+
+    [JsonPropertyName("contributionCount")]
+    public int ContributionCount { get; init; }
 }
 
 internal sealed class RepositoryConnection
@@ -166,12 +187,21 @@ internal sealed record AggregatedLanguage(string Name, long Size, string Color, 
 internal sealed record UserSummary(
     string Login,
     string DisplayName,
+    string? Location,
     int Followers,
     int PublicRepositories,
     int ContributionsThisYear,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<ContributionDaySummary> ContributionDays);
 
-internal sealed record PinRepository(string Owner, string Name);
+internal sealed record ContributionDaySummary(DateOnly Date, int ContributionCount);
+
+internal sealed record PinRepository(
+    string Owner,
+    string Name,
+    string? LanguageColorOverride,
+    string? LanguageIconOverride,
+    string? Icon);
 
 internal sealed record PinCardData(
     string Owner,
@@ -182,11 +212,17 @@ internal sealed record PinCardData(
     int Forks,
     string PrimaryLanguage,
     string PrimaryLanguageColor,
+    string? LanguageIconHref,
     bool IsPrivate,
     bool IsArchived,
-    RepositoryTrafficTotals? TrafficTotals);
+    RepositoryTrafficTotals? TrafficTotals,
+    string? RepositoryIconHref);
 
-internal sealed record CardsConfig(string Username, IReadOnlyList<PinRepository> Repositories);
+internal sealed record CardsConfig(
+    string Username,
+    IReadOnlyList<PinRepository> Repositories,
+    IReadOnlyDictionary<string, string> LanguageColorOverrides,
+    IReadOnlyDictionary<string, string> LanguageIconOverrides);
 
 internal sealed record AggregationResult(
     IReadOnlyList<AggregatedLanguage> Languages,

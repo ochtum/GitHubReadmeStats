@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace GitHubReadMeStats.Cli;
 
@@ -102,6 +103,7 @@ internal static class Program
     {
         string configPath = options.CardsConfigPath!;
         CardsConfig config = CardsConfigLoader.Load(configPath, viewerLogin);
+        string configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Directory.GetCurrentDirectory();
 
         UserSummary summary = await graphqlClient.FetchUserSummaryAsync(config.Username);
         string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc);
@@ -120,6 +122,33 @@ internal static class Program
         foreach (PinRepository repo in config.Repositories)
         {
             PinCardData baseData = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
+
+            string? colorOverride = ResolveLanguageColorOverride(repo, config, baseData.PrimaryLanguage);
+            if (!string.IsNullOrWhiteSpace(colorOverride))
+            {
+                baseData = baseData with
+                {
+                    PrimaryLanguageColor = colorOverride,
+                };
+            }
+
+            string? languageIconHref = ResolveLanguageIconOverride(repo, config, baseData.PrimaryLanguage, configDirectory);
+            if (!string.IsNullOrWhiteSpace(languageIconHref))
+            {
+                baseData = baseData with
+                {
+                    LanguageIconHref = languageIconHref,
+                };
+            }
+
+            string? repositoryIconHref = TryResolveIconHref(repo.Icon, configDirectory);
+            if (!string.IsNullOrWhiteSpace(repositoryIconHref))
+            {
+                baseData = baseData with
+                {
+                    RepositoryIconHref = repositoryIconHref,
+                };
+            }
 
             RepositoryTrafficSnapshot? trafficSnapshot = null;
             try
@@ -185,5 +214,149 @@ internal static class Program
         string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
         string relativePath = Path.GetRelativePath(readmeDirectory, options.OutputPath);
         return relativePath.Replace('\\', '/');
+    }
+
+    private static string? ResolveLanguageColorOverride(PinRepository repo, CardsConfig config, string primaryLanguage)
+    {
+        if (config.LanguageColorOverrides.TryGetValue(primaryLanguage, out string? fromMap))
+        {
+            string? normalizedFromMap = NormalizeCssColor(fromMap);
+            if (!string.IsNullOrWhiteSpace(normalizedFromMap))
+            {
+                return normalizedFromMap;
+            }
+        }
+
+        return NormalizeCssColor(repo.LanguageColorOverride);
+    }
+
+    private static string? ResolveLanguageIconOverride(
+        PinRepository repo,
+        CardsConfig config,
+        string primaryLanguage,
+        string configDirectory)
+    {
+        if (config.LanguageIconOverrides.TryGetValue(primaryLanguage, out string? fromMap))
+        {
+            string? resolvedFromMap = TryResolveIconHref(fromMap, configDirectory);
+            if (!string.IsNullOrWhiteSpace(resolvedFromMap))
+            {
+                return resolvedFromMap;
+            }
+        }
+
+        return TryResolveIconHref(repo.LanguageIconOverride, configDirectory);
+    }
+
+    private static string? NormalizeCssColor(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        string trimmed = value.Trim();
+
+        if (Regex.IsMatch(trimmed, "^#[0-9a-fA-F]{3}([0-9a-fA-F]{1,5})?$"))
+        {
+            return trimmed;
+        }
+
+        if (Regex.IsMatch(trimmed, "^[a-zA-Z]{1,20}$"))
+        {
+            return trimmed.ToLowerInvariant();
+        }
+
+        if (IsSafeColorFunction(trimmed, "rgb") ||
+            IsSafeColorFunction(trimmed, "rgba") ||
+            IsSafeColorFunction(trimmed, "hsl") ||
+            IsSafeColorFunction(trimmed, "hsla") ||
+            IsSafeColorFunction(trimmed, "oklch") ||
+            IsSafeColorFunction(trimmed, "oklab"))
+        {
+            return trimmed;
+        }
+
+        return null;
+    }
+
+    private static bool IsSafeColorFunction(string value, string functionName)
+    {
+        string prefix = functionName + "(";
+        if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || !value.EndsWith(')'))
+        {
+            return false;
+        }
+
+        if (value.Length > 100)
+        {
+            return false;
+        }
+
+        string args = value[prefix.Length..^1];
+        foreach (char c in args)
+        {
+            bool allowed = char.IsDigit(c) ||
+                           char.IsWhiteSpace(c) ||
+                           c is '.' or ',' or '%' or '/' or '+' or '-';
+
+            if (!allowed)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static string? TryResolveIconHref(string? iconValue, string configDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(iconValue))
+        {
+            return null;
+        }
+
+        string trimmed = iconValue.Trim();
+        if (trimmed.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri? uri) &&
+            (uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) ||
+             uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase)))
+        {
+            return trimmed;
+        }
+
+        string resolvedPath = Path.IsPathRooted(trimmed)
+            ? trimmed
+            : Path.GetFullPath(Path.Combine(configDirectory, trimmed));
+
+        if (!File.Exists(resolvedPath))
+        {
+            return null;
+        }
+
+        string extension = Path.GetExtension(resolvedPath).ToLowerInvariant();
+        string? mime = extension switch
+        {
+            ".svg" => "image/svg+xml",
+            ".png" => "image/png",
+            ".jpg" => "image/jpeg",
+            ".jpeg" => "image/jpeg",
+            ".gif" => "image/gif",
+            ".webp" => "image/webp",
+            _ => null,
+        };
+
+        if (mime is null)
+        {
+            return null;
+        }
+
+        byte[] bytes = File.ReadAllBytes(resolvedPath);
+        string base64 = Convert.ToBase64String(bytes);
+        return $"data:{mime};base64,{base64}";
     }
 }

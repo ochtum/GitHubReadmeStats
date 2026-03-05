@@ -30,20 +30,33 @@ internal static class PinCardRenderer
         sb.AppendLine("      .traffic { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #BFDBFE; }");
         sb.AppendLine("      .meta { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .sub { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine("      .badge-text { font: 700 9px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }");
         sb.AppendLine("      .hint { font: 500 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
         sb.AppendLine("      .icon-frame { fill: #0F1E3D; stroke: #3B82F6; stroke-width: 1.4; }");
+        sb.AppendLine("      .icon-image-bg { fill: #0B1224; }");
         sb.AppendLine("      .icon-shape { fill: none; stroke: #7DD3FC; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }");
         sb.AppendLine("      .icon-dot { fill: #22D3EE; }");
         sb.AppendLine("    </style>");
+        sb.AppendLine("    <clipPath id=\"iconClip\">");
+        sb.AppendLine("      <rect x=\"4\" y=\"4\" width=\"20\" height=\"20\" rx=\"4\" />");
+        sb.AppendLine("    </clipPath>");
         sb.AppendLine("  </defs>");
 
         sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"8\" fill=\"url(#bg)\" />");
         sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"7\" fill=\"none\" stroke=\"#334155\" />");
         sb.AppendLine("  <g transform=\"translate(24 18)\">");
         sb.AppendLine("    <rect x=\"0\" y=\"0\" width=\"28\" height=\"28\" rx=\"7\" class=\"icon-frame\" />");
-        sb.AppendLine("    <path d=\"M6 10h6l2.2 3H22v9H6z\" class=\"icon-shape\" />");
-        sb.AppendLine("    <path d=\"M6 13h16\" class=\"icon-shape\" />");
-        sb.AppendLine("    <circle cx=\"20\" cy=\"8\" r=\"2\" class=\"icon-dot\" />");
+        if (!string.IsNullOrWhiteSpace(repository.RepositoryIconHref))
+        {
+            sb.AppendLine("    <rect x=\"4\" y=\"4\" width=\"20\" height=\"20\" rx=\"4\" class=\"icon-image-bg\" />");
+            sb.AppendLine($"    <image x=\"4\" y=\"4\" width=\"20\" height=\"20\" clip-path=\"url(#iconClip)\" preserveAspectRatio=\"xMidYMid meet\" href=\"{EscapeXml(repository.RepositoryIconHref)}\" />");
+        }
+        else
+        {
+            sb.AppendLine("    <path d=\"M6 10h6l2.2 3H22v9H6z\" class=\"icon-shape\" />");
+            sb.AppendLine("    <path d=\"M6 13h16\" class=\"icon-shape\" />");
+            sb.AppendLine("    <circle cx=\"20\" cy=\"8\" r=\"2\" class=\"icon-dot\" />");
+        }
         sb.AppendLine("  </g>");
 
         sb.AppendLine("  <text x=\"62\" y=\"40\" class=\"title\">" + EscapeXml(title) + "</text>");
@@ -70,13 +83,34 @@ internal static class PinCardRenderer
         int dotY = hasTrafficTotals ? 187 : 162;
         int subY = hasTrafficTotals ? 208 : 184;
 
-        sb.AppendLine($"  <circle cx=\"28\" cy=\"{dotY}\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
+        if (!string.IsNullOrWhiteSpace(repository.LanguageIconHref))
+        {
+            sb.AppendLine($"  <clipPath id=\"langIconClip\"><circle cx=\"28\" cy=\"{dotY}\" r=\"5\" /></clipPath>");
+            sb.AppendLine($"  <circle cx=\"28\" cy=\"{dotY}\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
+            sb.AppendLine($"  <image x=\"23\" y=\"{dotY - 5}\" width=\"10\" height=\"10\" clip-path=\"url(#langIconClip)\" preserveAspectRatio=\"xMidYMid meet\" href=\"{EscapeXml(repository.LanguageIconHref)}\" />");
+        }
+        else
+        {
+            sb.AppendLine($"  <circle cx=\"28\" cy=\"{dotY}\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
+        }
+
         sb.AppendLine($"  <text x=\"40\" y=\"{metaY}\" class=\"meta\">{EscapeXml(language)}</text>");
         sb.AppendLine($"  <text x=\"220\" y=\"{metaY}\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
         sb.AppendLine($"  <text x=\"300\" y=\"{metaY}\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
 
-        string badge = repository.IsPrivate ? "private" : repository.IsArchived ? "archived" : "public";
-        sb.AppendLine($"  <text x=\"24\" y=\"{subY}\" class=\"sub\">{EscapeXml(repository.Owner)}/{EscapeXml(repository.Name)} • {badge}</text>");
+        string repositoryPath = $"{repository.Owner}/{repository.Name}";
+        string badgeLabel = repository.IsPrivate ? "PRIVATE" : repository.IsArchived ? "ARCHIVED" : "PUBLIC";
+        (string badgeFill, string badgeStroke, string badgeTextFill) = GetStatusBadgeStyle(repository);
+        int badgeWidth = 16 + (badgeLabel.Length * 7);
+        int badgeX = width - 24 - badgeWidth;
+        int badgeY = subY - 11;
+        int badgeTextX = badgeX + (badgeWidth / 2);
+        int badgeTextY = badgeY + 10;
+
+        string repositoryPathTrimmed = TrimToDisplayWidth(repositoryPath, maxColumns: 56);
+        sb.AppendLine($"  <text x=\"24\" y=\"{subY}\" class=\"sub\">{EscapeXml(repositoryPathTrimmed)}</text>");
+        sb.AppendLine($"  <rect x=\"{badgeX}\" y=\"{badgeY}\" width=\"{badgeWidth}\" height=\"15\" rx=\"7\" fill=\"{badgeFill}\" stroke=\"{badgeStroke}\" />");
+        sb.AppendLine($"  <text x=\"{badgeTextX}\" y=\"{badgeTextY}\" class=\"badge-text\" fill=\"{badgeTextFill}\">{badgeLabel}</text>");
 
         sb.AppendLine("</svg>");
 
@@ -214,5 +248,20 @@ internal static class PinCardRenderer
     private static string FormatMetric(long value)
     {
         return value.ToString("N0", CultureInfo.InvariantCulture);
+    }
+
+    private static (string Fill, string Stroke, string Text) GetStatusBadgeStyle(PinCardData repository)
+    {
+        if (repository.IsPrivate)
+        {
+            return ("#78350F", "#F59E0B", "#FEF3C7");
+        }
+
+        if (repository.IsArchived)
+        {
+            return ("#3F3F46", "#A1A1AA", "#F4F4F5");
+        }
+
+        return ("#0F766E", "#14B8A6", "#CCFBF1");
     }
 }

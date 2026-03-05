@@ -120,6 +120,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
   user(login: $login) {
     login
     name
+    location
     createdAt
     followers {
       totalCount
@@ -130,6 +131,12 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
     contributionsCollection(from: $from, to: $to) {
       contributionCalendar {
         totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+          }
+        }
       }
     }
   }
@@ -152,13 +159,17 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
         UserNode user = response.Data?.User
             ?? throw new InvalidOperationException($"User not found: {username}");
 
+        List<ContributionDaySummary> contributionDays = ExtractContributionDays(user);
+
         return new UserSummary(
             user.Login ?? username,
             string.IsNullOrWhiteSpace(user.Name) ? (user.Login ?? username) : user.Name!,
+            user.Location,
             user.Followers?.TotalCount ?? 0,
             user.Repositories?.TotalCount ?? 0,
             user.ContributionsCollection?.ContributionCalendar?.TotalContributions ?? 0,
-            user.CreatedAt);
+            user.CreatedAt,
+            contributionDays);
     }
 
     public async Task<PinCardData> FetchRepositoryCardDataAsync(string owner, string name, CancellationToken cancellationToken = default)
@@ -205,8 +216,10 @@ query($owner: String!, $name: String!) {
             repository.ForkCount,
             language,
             languageColor,
+            null,
             repository.IsPrivate,
             repository.IsArchived,
+            null,
             null);
     }
 
@@ -344,6 +357,43 @@ query($owner: String!, $name: String!) {
             date,
             Math.Max(0, point.Count),
             Math.Max(0, point.Uniques));
+    }
+
+    private static List<ContributionDaySummary> ExtractContributionDays(UserNode user)
+    {
+        var result = new List<ContributionDaySummary>();
+        List<ContributionWeekNode>? weeks = user.ContributionsCollection?.ContributionCalendar?.Weeks;
+        if (weeks is null || weeks.Count == 0)
+        {
+            return result;
+        }
+
+        foreach (ContributionWeekNode week in weeks)
+        {
+            if (week.ContributionDays is null || week.ContributionDays.Count == 0)
+            {
+                continue;
+            }
+
+            foreach (ContributionDayNode day in week.ContributionDays)
+            {
+                if (day is null || string.IsNullOrWhiteSpace(day.Date))
+                {
+                    continue;
+                }
+
+                if (!DateOnly.TryParse(day.Date, out DateOnly parsedDate))
+                {
+                    continue;
+                }
+
+                result.Add(new ContributionDaySummary(parsedDate, Math.Max(0, day.ContributionCount)));
+            }
+        }
+
+        return result
+            .OrderBy(x => x.Date)
+            .ToList();
     }
 
     private static string NormalizeColor(string? color)
