@@ -72,7 +72,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 
 ## cards-config.json
 
-`--cards-config` を指定すると `github-stats.svg`、`stats.svg`、`pins/*.svg` が生成されます。
+`--cards-config` を指定すると `github-stats.svg`、`stats.svg`、`public-repo-totals.svg`、`pins/*.svg` が生成されます。
 
 ```json
 {
@@ -129,7 +129,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `--start-marker`: README セクション開始マーカー
 - `--end-marker`: README セクション終了マーカー
 - `--cards-config`: stats/pin カード生成設定 JSON
-- `--cards-output-dir`: stats/pin の出力先ディレクトリ (default: `output`)
+- `--cards-output-dir`: stats/pin/public 合計カードの出力先ディレクトリ (default: `output`)
 
 ## プロフィールリポジトリでの導入手順
 
@@ -186,7 +186,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md cards-config.json output/top-languages.svg output/github-stats.svg output/stats.svg output/traffic-history.json output/pins/*.svg
+          git add README.md cards-config.json output/top-languages.svg output/github-stats.svg output/stats.svg output/public-repo-totals.svg output/traffic-history.json output/pins/*.svg
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
@@ -231,6 +231,8 @@ jobs:
 ![GitHub stats summary](./output/github-stats.svg)
 
 ![GitHub stats](./output/stats.svg)
+
+![Public repository totals](./output/public-repo-totals.svg)
 
 ## My Projects
 <a href="https://github.com/your-github-id/your-repo-1">

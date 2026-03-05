@@ -73,6 +73,9 @@ internal sealed class UserNode
     [JsonPropertyName("privateRepositories")]
     public TotalCountNode? PrivateRepositories { get; init; }
 
+    [JsonPropertyName("forkRepositories")]
+    public TotalCountNode? ForkRepositories { get; init; }
+
     [JsonPropertyName("pullRequests")]
     public TotalCountNode? PullRequests { get; init; }
 
@@ -205,6 +208,9 @@ internal sealed class RepositoryNode
     [JsonPropertyName("forkCount")]
     public int ForkCount { get; init; }
 
+    [JsonPropertyName("watchers")]
+    public TotalCountNode? Watchers { get; init; }
+
     [JsonPropertyName("primaryLanguage")]
     public LanguageNode? PrimaryLanguage { get; init; }
 
@@ -251,6 +257,7 @@ internal sealed record UserSummary(
     int Followers,
     int PublicRepositories,
     int PrivateRepositories,
+    int ForkedRepositories,
     int TotalStarsEarned,
     int TotalCommitsLastYear,
     int TotalPullRequestsLastYear,
@@ -346,6 +353,21 @@ internal sealed record RepositoryTrafficTotals(
     DateOnly SinceDate,
     DateOnly LastRecordedDate,
     bool UpdatedThisRun);
+
+internal sealed record PublicRepositoriesTotalsCardData(
+    string ViewerLogin,
+    int PublicRepositoryCount,
+    long TotalForks,
+    long TotalWatchers,
+    long TotalStarred,
+    long TotalCloneCount,
+    long TotalUniqueCloners,
+    long TotalViewCount,
+    long TotalUniqueVisitors,
+    int TrafficAvailableRepositoryCount,
+    int TrafficUnavailableRepositoryCount,
+    DateOnly? TrafficSinceDate,
+    DateOnly? TrafficLastRecordedDate);
 
 internal sealed class TrafficHistoryState
 {

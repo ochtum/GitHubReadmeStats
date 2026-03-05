@@ -45,6 +45,11 @@ query($first: Int!, $after: String) {
         isPrivate
         isFork
         isArchived
+        stargazerCount
+        forkCount
+        watchers {
+          totalCount
+        }
         languages(first: 20, orderBy: { field: SIZE, direction: DESC }) {
           edges {
             size
@@ -131,6 +136,9 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
     privateRepositories: repositories(ownerAffiliations: OWNER, isFork: false, privacy: PRIVATE) {
       totalCount
     }
+    forkRepositories: repositories(ownerAffiliations: OWNER, isFork: true) {
+      totalCount
+    }
     pullRequests(first: 1) {
       totalCount
     }
@@ -201,6 +209,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             user.Followers?.TotalCount ?? 0,
             user.Repositories?.TotalCount ?? 0,
             user.PrivateRepositories?.TotalCount ?? 0,
+            user.ForkRepositories?.TotalCount ?? 0,
             totalStarsEarned,
             totalCommitsLastYear,
             totalPullRequestsLastYear,

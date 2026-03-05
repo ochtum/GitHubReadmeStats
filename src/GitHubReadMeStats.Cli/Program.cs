@@ -78,6 +78,7 @@ internal static class Program
                     graphqlClient,
                     options,
                     generatedAtUtc,
+                    repositoriesResult,
                     cardsConfig!,
                     timeDisplay);
             }
@@ -113,6 +114,7 @@ internal static class Program
         GitHubGraphQlClient graphqlClient,
         CliOptions options,
         DateTimeOffset generatedAtUtc,
+        ViewerRepositoriesResult repositoriesResult,
         CardsConfig config,
         TimeDisplaySettings timeDisplay)
     {
@@ -138,8 +140,112 @@ internal static class Program
         string trafficHistoryPath = Path.Combine(options.CardsOutputDir, "traffic-history.json");
         TrafficHistoryStore trafficHistory = TrafficHistoryStore.Load(trafficHistoryPath);
 
+        var trafficTotalsCache = new Dictionary<string, RepositoryTrafficTotals?>(StringComparer.OrdinalIgnoreCase);
+        var unavailableTrafficKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        async Task<RepositoryTrafficTotals?> GetTrafficTotalsAsync(string owner, string name)
+        {
+            string key = $"{owner}/{name}";
+            if (trafficTotalsCache.TryGetValue(key, out RepositoryTrafficTotals? cachedTotals))
+            {
+                return cachedTotals;
+            }
+
+            RepositoryTrafficSnapshot? trafficSnapshot = null;
+            try
+            {
+                trafficSnapshot = await graphqlClient.TryFetchRepositoryTrafficAsync(owner, name);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: failed to fetch traffic for {owner}/{name}: {ex.Message}");
+            }
+
+            RepositoryTrafficTotals? trafficTotals = trafficHistory.MergeAndGetTotals(owner, name, trafficSnapshot);
+            if (trafficSnapshot is null && trafficTotals is null && unavailableTrafficKeys.Add(key))
+            {
+                Console.WriteLine(
+                    $"Info: traffic unavailable for {owner}/{name}. " +
+                    "Check GH_TOKEN repository access and 'Administration: Read' permission.");
+            }
+
+            trafficTotalsCache[key] = trafficTotals;
+            return trafficTotals;
+        }
+
+        List<RepositoryNode> publicRepositories = repositoriesResult.Repositories
+            .Where(repo => !repo.IsPrivate)
+            .ToList();
+
+        long totalForks = 0;
+        long totalWatchers = 0;
+        long totalStarred = 0;
+        long totalCloneCount = 0;
+        long totalUniqueCloners = 0;
+        long totalViewCount = 0;
+        long totalUniqueVisitors = 0;
+
+        int trafficTargetRepositoryCount = 0;
+        int trafficAvailableRepositoryCount = 0;
+        DateOnly? trafficSinceDate = null;
+        DateOnly? trafficLastRecordedDate = null;
+
+        foreach (RepositoryNode repository in publicRepositories)
+        {
+            totalForks += Math.Max(0, repository.ForkCount);
+            totalWatchers += Math.Max(0, repository.Watchers?.TotalCount ?? 0);
+            totalStarred += Math.Max(0, repository.StargazerCount);
+
+            if (!TrySplitNameWithOwner(repository.NameWithOwner, out string owner, out string name))
+            {
+                continue;
+            }
+
+            trafficTargetRepositoryCount++;
+            RepositoryTrafficTotals? trafficTotals = await GetTrafficTotalsAsync(owner, name);
+            if (trafficTotals is null)
+            {
+                continue;
+            }
+
+            trafficAvailableRepositoryCount++;
+            totalCloneCount += Math.Max(0, trafficTotals.CloneCountTotal);
+            totalUniqueCloners += Math.Max(0, trafficTotals.UniqueClonersTotal);
+            totalViewCount += Math.Max(0, trafficTotals.ViewCountTotal);
+            totalUniqueVisitors += Math.Max(0, trafficTotals.UniqueVisitorsTotal);
+
+            trafficSinceDate = trafficSinceDate is null || trafficTotals.SinceDate < trafficSinceDate.Value
+                ? trafficTotals.SinceDate
+                : trafficSinceDate;
+
+            trafficLastRecordedDate = trafficLastRecordedDate is null || trafficTotals.LastRecordedDate > trafficLastRecordedDate.Value
+                ? trafficTotals.LastRecordedDate
+                : trafficLastRecordedDate;
+        }
+
+        int trafficUnavailableRepositoryCount = Math.Max(0, trafficTargetRepositoryCount - trafficAvailableRepositoryCount);
+        var totalsCardData = new PublicRepositoriesTotalsCardData(
+            repositoriesResult.ViewerLogin,
+            publicRepositories.Count,
+            totalForks,
+            totalWatchers,
+            totalStarred,
+            totalCloneCount,
+            totalUniqueCloners,
+            totalViewCount,
+            totalUniqueVisitors,
+            trafficAvailableRepositoryCount,
+            trafficUnavailableRepositoryCount,
+            trafficSinceDate,
+            trafficLastRecordedDate);
+
+        string totalsSvg = PublicRepositoriesTotalsCardRenderer.Render(totalsCardData, generatedAtUtc, timeDisplay);
+        string totalsPath = Path.Combine(options.CardsOutputDir, "public-repo-totals.svg");
+        EnsureParentDirectory(totalsPath);
+        await File.WriteAllTextAsync(totalsPath, totalsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        Console.WriteLine($"Generated: {totalsPath}");
+
         int generatedPinCount = 0;
-        int unavailableTrafficCount = 0;
         foreach (PinRepository repo in config.Repositories)
         {
             PinCardData baseData = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
@@ -171,24 +277,7 @@ internal static class Program
                 };
             }
 
-            RepositoryTrafficSnapshot? trafficSnapshot = null;
-            try
-            {
-                trafficSnapshot = await graphqlClient.TryFetchRepositoryTrafficAsync(repo.Owner, repo.Name);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Warning: failed to fetch traffic for {repo.Owner}/{repo.Name}: {ex.Message}");
-            }
-
-            RepositoryTrafficTotals? trafficTotals = trafficHistory.MergeAndGetTotals(repo.Owner, repo.Name, trafficSnapshot);
-            if (trafficSnapshot is null && trafficTotals is null)
-            {
-                unavailableTrafficCount++;
-                Console.WriteLine(
-                    $"Info: traffic unavailable for {repo.Owner}/{repo.Name}. " +
-                    "Check GH_TOKEN repository access and 'Administration: Read' permission.");
-            }
+            RepositoryTrafficTotals? trafficTotals = await GetTrafficTotalsAsync(repo.Owner, repo.Name);
 
             PinCardData data = baseData with
             {
@@ -203,9 +292,9 @@ internal static class Program
 
         await trafficHistory.SaveAsync(trafficHistoryPath);
         Console.WriteLine($"Updated traffic history: {trafficHistoryPath}");
-        if (unavailableTrafficCount > 0)
+        if (unavailableTrafficKeys.Count > 0)
         {
-            Console.WriteLine($"Traffic unavailable repositories: {unavailableTrafficCount}");
+            Console.WriteLine($"Traffic unavailable repositories: {unavailableTrafficKeys.Count}");
         }
 
         Console.WriteLine($"Generated pin cards: {generatedPinCount}");
@@ -379,6 +468,31 @@ internal static class Program
         {
             Directory.CreateDirectory(directory);
         }
+    }
+
+    private static bool TrySplitNameWithOwner(string value, out string owner, out string name)
+    {
+        owner = string.Empty;
+        name = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        string[] parts = value
+            .Split('/', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (parts.Length != 2 ||
+            string.IsNullOrWhiteSpace(parts[0]) ||
+            string.IsNullOrWhiteSpace(parts[1]))
+        {
+            return false;
+        }
+
+        owner = parts[0];
+        name = parts[1];
+        return true;
     }
 
     private static string SanitizePathSegment(string value)

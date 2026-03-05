@@ -58,10 +58,11 @@ internal static class ProfileStatsCardRenderer
         AppendMetricRow(sb, metricY, "#FACC15", $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtLocal.Year}");
         AppendMetricRow(sb, metricY + 16, "#22D3EE", $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
         AppendMetricRow(sb, metricY + 32, "#38BDF8", $"{summary.PrivateRepositories.ToString("N0", CultureInfo.InvariantCulture)} Private Repositories");
-        AppendMetricRow(sb, metricY + 48, "#84CC16", $"Joined GitHub {joinedYears} years ago");
+        AppendMetricRow(sb, metricY + 48, "#A78BFA", $"{summary.ForkedRepositories.ToString("N0", CultureInfo.InvariantCulture)} Forked Repositories");
+        AppendMetricRow(sb, metricY + 64, "#84CC16", $"Joined GitHub {joinedYears} years ago");
         if (!string.IsNullOrWhiteSpace(summary.Location))
         {
-            AppendMetricRow(sb, metricY + 64, "#F472B6", summary.Location!);
+            AppendMetricRow(sb, metricY + 80, "#F472B6", summary.Location!);
         }
 
         sb.AppendLine($"  <text x=\"{chartX + chartWidth - 104}\" y=\"14\" class=\"chart-title\">contributions in the last year</text>");
