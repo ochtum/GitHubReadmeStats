@@ -163,7 +163,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 """;
 
         DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
-        DateTimeOffset from = new(nowUtc.Year - 1, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        DateTimeOffset from = nowUtc.AddYears(-1);
         DateTimeOffset to = nowUtc;
 
         GraphQlResponse<UserLookupData> response = await ExecuteGraphQlAsync<UserLookupData>(
