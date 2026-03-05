@@ -174,7 +174,7 @@ internal static class Program
         }
 
         List<RepositoryNode> publicRepositories = repositoriesResult.Repositories
-            .Where(repo => !repo.IsPrivate)
+            .Where(repo => !repo.IsPrivate && !repo.IsFork)
             .ToList();
 
         long totalForks = 0;
