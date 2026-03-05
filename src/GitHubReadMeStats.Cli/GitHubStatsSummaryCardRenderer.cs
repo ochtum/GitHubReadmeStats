@@ -6,13 +6,14 @@ namespace GitHubReadMeStats.Cli;
 
 internal static class GitHubStatsSummaryCardRenderer
 {
-    public static string Render(UserSummary summary)
+    public static string Render(UserSummary summary, DateTimeOffset generatedAtUtc, TimeDisplaySettings timeDisplay)
     {
         const int width = 495;
         const int height = 210;
         const double gaugeCenterX = 414;
         const double gaugeCenterY = 103;
         const double gaugeRadius = 34;
+        DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
 
         Rank rank = CalculateRank(summary);
         string title = $"{summary.Login}'s GitHub Stats";
@@ -32,6 +33,7 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine("      .grade { font: 700 46px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
         sb.AppendLine("      .grade-wide { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
         sb.AppendLine("      .score { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; font-variant-numeric: tabular-nums; }");
+        sb.AppendLine("      .meta { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
@@ -40,7 +42,7 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine($"  <text x=\"24\" y=\"36\" class=\"title\">{EscapeXml(title)}</text>");
 
         AppendMetricRow(sb, 24, 63, "☆", "Total Stars Earned:", summary.TotalStarsEarned);
-        AppendMetricRow(sb, 24, 91, "◔", "Total Commits (last year):", summary.TotalCommitsLastYear);
+        AppendMetricRow(sb, 24, 91, "◔", "Total Commits:", summary.TotalCommitsLastYear);
         AppendMetricRow(sb, 24, 119, "⑂", "Total PRs:", summary.TotalPullRequestsLastYear);
         AppendMetricRow(sb, 24, 147, "◍", "Total Issues:", summary.TotalIssuesLastYear);
         AppendMetricRow(sb, 24, 175, "▣", "Contributed to (last year):", summary.ContributedToRepositoriesLastYear);
@@ -56,6 +58,7 @@ internal static class GitHubStatsSummaryCardRenderer
         string gradeClass = rank.Level.Length > 1 ? "grade-wide" : "grade";
         sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 13)}\" class=\"{gradeClass}\" text-anchor=\"middle\">{rank.Level}</text>");
         sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 33)}\" class=\"score\" text-anchor=\"middle\">Top {rank.Percentile.ToString("0.00", CultureInfo.InvariantCulture)}%</text>");
+        sb.AppendLine($"  <text x=\"24\" y=\"198\" class=\"meta\">Updated {generatedAtLocal:yyyy-MM-dd HH:mm} {EscapeXml(timeDisplay.Label)}</text>");
         sb.AppendLine("</svg>");
 
         return sb.ToString();

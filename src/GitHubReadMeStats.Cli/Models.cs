@@ -307,6 +307,12 @@ internal sealed class RestTrafficResponse
     public List<RestTrafficPoint>? Views { get; init; }
 }
 
+internal sealed class RestSearchTotalCountResponse
+{
+    [JsonPropertyName("total_count")]
+    public int TotalCount { get; init; }
+}
+
 internal sealed class RestTrafficPoint
 {
     [JsonPropertyName("timestamp")]
