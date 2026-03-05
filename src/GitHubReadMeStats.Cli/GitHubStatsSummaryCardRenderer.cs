@@ -27,11 +27,11 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 28px 'Segoe UI', Arial, sans-serif; fill: #F43F93; }");
         sb.AppendLine("      .label { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
-        sb.AppendLine("      .value { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #A7F3D0; }");
+        sb.AppendLine("      .value { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #A7F3D0; font-variant-numeric: tabular-nums; }");
         sb.AppendLine("      .icon { font: 700 13px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: #FACC15; }");
         sb.AppendLine("      .grade { font: 700 46px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
         sb.AppendLine("      .grade-wide { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
-        sb.AppendLine("      .score { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine("      .score { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; font-variant-numeric: tabular-nums; }");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 

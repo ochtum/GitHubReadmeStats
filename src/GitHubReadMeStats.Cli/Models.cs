@@ -73,6 +73,21 @@ internal sealed class UserNode
     [JsonPropertyName("privateRepositories")]
     public TotalCountNode? PrivateRepositories { get; init; }
 
+    [JsonPropertyName("pullRequests")]
+    public TotalCountNode? PullRequests { get; init; }
+
+    [JsonPropertyName("openIssues")]
+    public TotalCountNode? OpenIssues { get; init; }
+
+    [JsonPropertyName("closedIssues")]
+    public TotalCountNode? ClosedIssues { get; init; }
+
+    [JsonPropertyName("repositoriesContributedTo")]
+    public TotalCountNode? RepositoriesContributedTo { get; init; }
+
+    [JsonPropertyName("reviews")]
+    public ReviewContributionsNode? Reviews { get; init; }
+
     [JsonPropertyName("contributionsCollection")]
     public ContributionsCollectionNode? ContributionsCollection { get; init; }
 }
@@ -102,6 +117,12 @@ internal sealed class ContributionsCollectionNode
 
     [JsonPropertyName("contributionCalendar")]
     public ContributionCalendarNode? ContributionCalendar { get; init; }
+}
+
+internal sealed class ReviewContributionsNode
+{
+    [JsonPropertyName("totalPullRequestReviewContributions")]
+    public int TotalPullRequestReviewContributions { get; init; }
 }
 
 internal sealed class ContributionCalendarNode

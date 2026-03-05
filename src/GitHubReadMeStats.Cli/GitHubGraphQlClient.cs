@@ -131,12 +131,23 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
     privateRepositories: repositories(ownerAffiliations: OWNER, isFork: false, privacy: PRIVATE) {
       totalCount
     }
+    pullRequests(first: 1) {
+      totalCount
+    }
+    openIssues: issues(states: OPEN) {
+      totalCount
+    }
+    closedIssues: issues(states: CLOSED) {
+      totalCount
+    }
+    repositoriesContributedTo(first: 1, contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
+      totalCount
+    }
+    reviews: contributionsCollection {
+      totalPullRequestReviewContributions
+    }
     contributionsCollection(from: $from, to: $to) {
       totalCommitContributions
-      totalIssueContributions
-      totalPullRequestContributions
-      totalPullRequestReviewContributions
-      totalRepositoriesWithContributedCommits
       contributionCalendar {
         totalContributions
         weeks {
@@ -152,7 +163,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 """;
 
         DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
-        DateTimeOffset from = nowUtc.AddYears(-1);
+        DateTimeOffset from = new(nowUtc.Year - 1, 1, 1, 0, 0, 0, TimeSpan.Zero);
         DateTimeOffset to = nowUtc;
 
         GraphQlResponse<UserLookupData> response = await ExecuteGraphQlAsync<UserLookupData>(
@@ -170,10 +181,10 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 
         int totalStarsEarned = await FetchTotalStarsEarnedAsync(user.Login ?? username, cancellationToken);
         int totalCommitsLastYear = Math.Max(0, user.ContributionsCollection?.TotalCommitContributions ?? 0);
-        int totalPullRequestsLastYear = Math.Max(0, user.ContributionsCollection?.TotalPullRequestContributions ?? 0);
-        int totalIssuesLastYear = Math.Max(0, user.ContributionsCollection?.TotalIssueContributions ?? 0);
-        int totalReviewsLastYear = Math.Max(0, user.ContributionsCollection?.TotalPullRequestReviewContributions ?? 0);
-        int contributedToRepositoriesLastYear = Math.Max(0, user.ContributionsCollection?.TotalRepositoriesWithContributedCommits ?? 0);
+        int totalPullRequestsLastYear = Math.Max(0, user.PullRequests?.TotalCount ?? 0);
+        int totalIssuesLastYear = Math.Max(0, (user.OpenIssues?.TotalCount ?? 0) + (user.ClosedIssues?.TotalCount ?? 0));
+        int totalReviewsLastYear = Math.Max(0, user.Reviews?.TotalPullRequestReviewContributions ?? 0);
+        int contributedToRepositoriesLastYear = Math.Max(0, user.RepositoriesContributedTo?.TotalCount ?? 0);
 
         List<ContributionDaySummary> contributionDays = ExtractContributionDays(user);
         int contributionsThisYear = contributionDays
@@ -207,7 +218,6 @@ query($login: String!, $first: Int!, $after: String) {
       first: $first
       after: $after
       ownerAffiliations: OWNER
-      isFork: false
       orderBy: { field: UPDATED_AT, direction: DESC }
     ) {
       pageInfo {

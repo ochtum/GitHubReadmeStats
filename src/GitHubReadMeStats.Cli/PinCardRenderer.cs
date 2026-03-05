@@ -28,7 +28,7 @@ internal static class PinCardRenderer
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }");
-        sb.AppendLine("      .desc { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
+        sb.AppendLine("      .desc { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
         sb.AppendLine("      .traffic-label { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #93C5FD; }");
         sb.AppendLine("      .traffic-value { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .meta { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
@@ -68,7 +68,7 @@ internal static class PinCardRenderer
 
         for (int i = 0; i < lines.Length; i++)
         {
-            sb.AppendLine($"  <text x=\"24\" y=\"{70 + (i * 16)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"{70 + (i * 17)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
         }
 
         if (repository.TrafficTotals is not null)

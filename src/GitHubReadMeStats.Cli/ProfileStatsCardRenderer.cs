@@ -40,7 +40,7 @@ internal static class ProfileStatsCardRenderer
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #F43F98; }");
         sb.AppendLine("      .login { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .value { font: 700 11px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
+        sb.AppendLine("      .value { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
         sb.AppendLine("      .axis { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #38BDF8; }");
         sb.AppendLine("      .xaxis { font: 600 8px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
         sb.AppendLine("      .meta { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
