@@ -66,8 +66,14 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 
 | Rank | Language | Size | Share |
 | ---: | :-- | ---: | ---: |
-| 1 | Example | 0 B | 0.00% |
+| 1 | Python | 133.33 KB | 42.18% |
+| 2 | JavaScript | 65.7 KB | 20.78% |
+| 3 | HTML | 45.77 KB | 14.48% |
+| 4 | CSS | 34.08 KB | 10.78% |
+| 5 | C# | 19.91 KB | 6.30% |
+| 6 | TypeScript | 6.39 KB | 2.02% |
 
-_Updated: not generated yet_  
-_Repositories: 0 / 0 (included/scanned)_
+_Updated: 2026-03-05 14:54 UTC_  
+_Repositories: 20 / 115 (included/scanned)_
 <!-- github-readme-stats:end -->
+
