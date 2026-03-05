@@ -53,6 +53,7 @@ internal static class PinCardRenderer
             sb.AppendLine($"  <text x=\"24\" y=\"{70 + (i * 16)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
         }
 
+        bool hasTrafficTotals = repository.TrafficTotals is not null;
         if (repository.TrafficTotals is not null)
         {
             RepositoryTrafficTotals totals = repository.TrafficTotals;
@@ -62,22 +63,20 @@ internal static class PinCardRenderer
             sb.AppendLine($"  <text x=\"24\" y=\"166\" class=\"traffic\">Unique visitors total: {FormatMetric(totals.UniqueVisitorsTotal)}</text>");
             sb.AppendLine($"  <text x=\"24\" y=\"223\" class=\"hint\">Traffic since {totals.SinceDate:yyyy-MM-dd} (last {totals.LastRecordedDate:yyyy-MM-dd})</text>");
         }
-        else
-        {
-            sb.AppendLine("  <text x=\"24\" y=\"146\" class=\"traffic\">Traffic totals: unavailable</text>");
-            sb.AppendLine("  <text x=\"24\" y=\"223\" class=\"hint\">Traffic API requires repository traffic access.</text>");
-        }
 
         string language = string.IsNullOrWhiteSpace(repository.PrimaryLanguage) ? "Unknown" : repository.PrimaryLanguage;
         string languageColor = string.IsNullOrWhiteSpace(repository.PrimaryLanguageColor) ? "#94A3B8" : repository.PrimaryLanguageColor;
+        int metaY = hasTrafficTotals ? 191 : 166;
+        int dotY = hasTrafficTotals ? 187 : 162;
+        int subY = hasTrafficTotals ? 208 : 184;
 
-        sb.AppendLine($"  <circle cx=\"28\" cy=\"187\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
-        sb.AppendLine($"  <text x=\"40\" y=\"191\" class=\"meta\">{EscapeXml(language)}</text>");
-        sb.AppendLine($"  <text x=\"220\" y=\"191\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
-        sb.AppendLine($"  <text x=\"300\" y=\"191\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <circle cx=\"28\" cy=\"{dotY}\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
+        sb.AppendLine($"  <text x=\"40\" y=\"{metaY}\" class=\"meta\">{EscapeXml(language)}</text>");
+        sb.AppendLine($"  <text x=\"220\" y=\"{metaY}\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <text x=\"300\" y=\"{metaY}\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
 
         string badge = repository.IsPrivate ? "private" : repository.IsArchived ? "archived" : "public";
-        sb.AppendLine($"  <text x=\"24\" y=\"208\" class=\"sub\">{EscapeXml(repository.Owner)}/{EscapeXml(repository.Name)} • {badge}</text>");
+        sb.AppendLine($"  <text x=\"24\" y=\"{subY}\" class=\"sub\">{EscapeXml(repository.Owner)}/{EscapeXml(repository.Name)} • {badge}</text>");
 
         sb.AppendLine("</svg>");
 
