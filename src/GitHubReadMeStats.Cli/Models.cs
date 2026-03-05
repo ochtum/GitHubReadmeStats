@@ -94,6 +94,9 @@ internal sealed class ContributionsCollectionNode
     [JsonPropertyName("totalPullRequestContributions")]
     public int TotalPullRequestContributions { get; init; }
 
+    [JsonPropertyName("totalPullRequestReviewContributions")]
+    public int TotalPullRequestReviewContributions { get; init; }
+
     [JsonPropertyName("totalRepositoriesWithContributedCommits")]
     public int TotalRepositoriesWithContributedCommits { get; init; }
 
@@ -222,6 +225,7 @@ internal sealed record UserSummary(
     int TotalCommitsLastYear,
     int TotalPullRequestsLastYear,
     int TotalIssuesLastYear,
+    int TotalReviewsLastYear,
     int ContributedToRepositoriesLastYear,
     int ContributionsThisYear,
     DateTimeOffset CreatedAt,

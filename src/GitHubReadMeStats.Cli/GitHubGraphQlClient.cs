@@ -135,6 +135,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
       totalCommitContributions
       totalIssueContributions
       totalPullRequestContributions
+      totalPullRequestReviewContributions
       totalRepositoriesWithContributedCommits
       contributionCalendar {
         totalContributions
@@ -171,6 +172,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
         int totalCommitsLastYear = Math.Max(0, user.ContributionsCollection?.TotalCommitContributions ?? 0);
         int totalPullRequestsLastYear = Math.Max(0, user.ContributionsCollection?.TotalPullRequestContributions ?? 0);
         int totalIssuesLastYear = Math.Max(0, user.ContributionsCollection?.TotalIssueContributions ?? 0);
+        int totalReviewsLastYear = Math.Max(0, user.ContributionsCollection?.TotalPullRequestReviewContributions ?? 0);
         int contributedToRepositoriesLastYear = Math.Max(0, user.ContributionsCollection?.TotalRepositoriesWithContributedCommits ?? 0);
 
         List<ContributionDaySummary> contributionDays = ExtractContributionDays(user);
@@ -189,6 +191,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             totalCommitsLastYear,
             totalPullRequestsLastYear,
             totalIssuesLastYear,
+            totalReviewsLastYear,
             contributedToRepositoriesLastYear,
             contributionsThisYear,
             user.CreatedAt,

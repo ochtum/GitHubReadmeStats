@@ -14,7 +14,7 @@ internal static class GitHubStatsSummaryCardRenderer
         const double gaugeCenterY = 103;
         const double gaugeRadius = 34;
 
-        Grade grade = CalculateGrade(summary);
+        Rank rank = CalculateRank(summary);
         string title = $"{summary.Login}'s GitHub Stats";
 
         var sb = new StringBuilder();
@@ -30,6 +30,7 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine("      .value { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #A7F3D0; }");
         sb.AppendLine("      .icon { font: 700 13px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: #FACC15; }");
         sb.AppendLine("      .grade { font: 700 46px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
+        sb.AppendLine("      .grade-wide { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #67E8F9; }");
         sb.AppendLine("      .score { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
@@ -45,14 +46,16 @@ internal static class GitHubStatsSummaryCardRenderer
         AppendMetricRow(sb, 24, 175, "▣", "Contributed to (last year):", summary.ContributedToRepositoriesLastYear);
 
         sb.AppendLine($"  <circle cx=\"{Format(gaugeCenterX)}\" cy=\"{Format(gaugeCenterY)}\" r=\"{Format(gaugeRadius)}\" fill=\"none\" stroke=\"#312E81\" stroke-width=\"7\" />");
-        if (grade.Score > 0)
+        double gaugeRatio = Math.Clamp(1d - (rank.Percentile / 100d), 0d, 1d);
+        if (gaugeRatio > 0)
         {
-            string gaugePath = BuildArcPath(gaugeCenterX, gaugeCenterY, gaugeRadius, grade.Score / 100d);
+            string gaugePath = BuildArcPath(gaugeCenterX, gaugeCenterY, gaugeRadius, gaugeRatio);
             sb.AppendLine($"  <path d=\"{gaugePath}\" fill=\"none\" stroke=\"#EC4899\" stroke-width=\"7\" stroke-linecap=\"round\" />");
         }
 
-        sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 13)}\" class=\"grade\" text-anchor=\"middle\">{grade.Letter}</text>");
-        sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 33)}\" class=\"score\" text-anchor=\"middle\">score {grade.Score}</text>");
+        string gradeClass = rank.Level.Length > 1 ? "grade-wide" : "grade";
+        sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 13)}\" class=\"{gradeClass}\" text-anchor=\"middle\">{rank.Level}</text>");
+        sb.AppendLine($"  <text x=\"{Format(gaugeCenterX)}\" y=\"{Format(gaugeCenterY + 33)}\" class=\"score\" text-anchor=\"middle\">Top {rank.Percentile.ToString("0.00", CultureInfo.InvariantCulture)}%</text>");
         sb.AppendLine("</svg>");
 
         return sb.ToString();
@@ -65,30 +68,61 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine($"  <text x=\"284\" y=\"{y}\" class=\"value\" text-anchor=\"end\">{value.ToString("N0", CultureInfo.InvariantCulture)}</text>");
     }
 
-    private static Grade CalculateGrade(UserSummary summary)
+    private static Rank CalculateRank(UserSummary summary)
     {
-        static double Log10Score(int value) => Math.Log10(Math.Max(value, 0) + 1d);
+        const bool allCommits = false;
+        const double commitsMedian = allCommits ? 1000d : 250d;
+        const double commitsWeight = 2d;
+        const double prsMedian = 50d;
+        const double prsWeight = 3d;
+        const double issuesMedian = 25d;
+        const double issuesWeight = 1d;
+        const double reviewsMedian = 2d;
+        const double reviewsWeight = 1d;
+        const double starsMedian = 50d;
+        const double starsWeight = 4d;
+        const double followersMedian = 10d;
+        const double followersWeight = 1d;
 
-        double raw =
-            (25d * Log10Score(summary.TotalStarsEarned)) +
-            (35d * Log10Score(summary.TotalCommitsLastYear)) +
-            (20d * Log10Score(summary.TotalPullRequestsLastYear)) +
-            (15d * Log10Score(summary.TotalIssuesLastYear)) +
-            (5d * Log10Score(summary.ContributedToRepositoriesLastYear));
+        double totalWeight =
+            commitsWeight +
+            prsWeight +
+            issuesWeight +
+            reviewsWeight +
+            starsWeight +
+            followersWeight;
 
-        int score = (int)Math.Round(Math.Clamp(raw / 2.6d, 0d, 100d), MidpointRounding.AwayFromZero);
-        string letter = score switch
+        double rank =
+            1d -
+            (
+                (commitsWeight * ExponentialCdf(summary.TotalCommitsLastYear / commitsMedian)) +
+                (prsWeight * ExponentialCdf(summary.TotalPullRequestsLastYear / prsMedian)) +
+                (issuesWeight * ExponentialCdf(summary.TotalIssuesLastYear / issuesMedian)) +
+                (reviewsWeight * ExponentialCdf(summary.TotalReviewsLastYear / reviewsMedian)) +
+                (starsWeight * LogNormalCdf(summary.TotalStarsEarned / starsMedian)) +
+                (followersWeight * LogNormalCdf(summary.Followers / followersMedian))
+            ) / totalWeight;
+
+        double percentile = Math.Clamp(rank * 100d, 0d, 100d);
+        string[] levels = ["S", "A+", "A", "A-", "B+", "B", "B-", "C+", "C"];
+        double[] thresholds = [1d, 12.5d, 25d, 37.5d, 50d, 62.5d, 75d, 87.5d, 100d];
+        int index = Array.FindIndex(thresholds, threshold => percentile <= threshold);
+        if (index < 0)
         {
-            >= 90 => "S",
-            >= 80 => "A",
-            >= 70 => "B",
-            >= 60 => "C",
-            >= 50 => "D",
-            >= 40 => "E",
-            _ => "F",
-        };
+            index = levels.Length - 1;
+        }
 
-        return new Grade(letter, score);
+        return new Rank(levels[index], percentile);
+    }
+
+    private static double ExponentialCdf(double x)
+    {
+        return 1d - Math.Pow(2d, -x);
+    }
+
+    private static double LogNormalCdf(double x)
+    {
+        return x / (1d + x);
     }
 
     private static string BuildArcPath(double cx, double cy, double radius, double ratio)
@@ -137,5 +171,5 @@ internal static class GitHubStatsSummaryCardRenderer
         return value.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
-    private readonly record struct Grade(string Letter, int Score);
+    private readonly record struct Rank(string Level, double Percentile);
 }
