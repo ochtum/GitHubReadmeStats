@@ -22,6 +22,8 @@ internal static class CliParser
         string startMarker = DefaultStartMarker;
         string endMarker = DefaultEndMarker;
         string? imagePathForReadme = null;
+        string? cardsConfigPath = null;
+        string cardsOutputDir = "output";
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -86,6 +88,18 @@ internal static class CliParser
             if (TryParseInlineValue(arg, "--end-marker", out string endMarkerValue))
             {
                 endMarker = endMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--cards-config", out string cardsConfigValue))
+            {
+                cardsConfigPath = cardsConfigValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--cards-output-dir", out string cardsOutputValue))
+            {
+                cardsOutputDir = cardsOutputValue;
                 continue;
             }
 
@@ -183,6 +197,24 @@ internal static class CliParser
 
                     break;
 
+                case "--cards-config":
+                    cardsConfigPath = ReadNextValue(args, ref i);
+                    if (cardsConfigPath is null)
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--cards-output-dir":
+                    cardsOutputDir = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(cardsOutputDir))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
                 default:
                     return new CliParseResult(null, $"Unknown option: {arg}", false, false);
             }
@@ -208,6 +240,16 @@ internal static class CliParser
             updateReadmePath = null;
         }
 
+        if (string.IsNullOrWhiteSpace(cardsConfigPath))
+        {
+            cardsConfigPath = null;
+        }
+
+        if (string.IsNullOrWhiteSpace(cardsOutputDir))
+        {
+            return new CliParseResult(null, "--cards-output-dir requires a non-empty value.", false, false);
+        }
+
         token = token?.Trim();
         token ??= Environment.GetEnvironmentVariable("GH_TOKEN")?.Trim();
         token ??= Environment.GetEnvironmentVariable("GITHUB_TOKEN")?.Trim();
@@ -230,7 +272,9 @@ internal static class CliParser
             updateReadmePath,
             startMarker,
             endMarker,
-            imagePathForReadme);
+            imagePathForReadme,
+            cardsConfigPath,
+            cardsOutputDir);
 
         return new CliParseResult(options, null, false, false);
     }
@@ -255,7 +299,9 @@ internal static class CliParser
             "      --update-readme <path>      Update markdown section in README\n" +
             "      --image-path <path>         Image path used in README markdown\n" +
             "      --start-marker <marker>     README section start marker\n" +
-            "      --end-marker <marker>       README section end marker\n";
+            "      --end-marker <marker>       README section end marker\n" +
+            "      --cards-config <path>       JSON config for stats/pin card generation\n" +
+            "      --cards-output-dir <path>   Output directory for generated cards (default: output)\n";
     }
 
     private static bool TryParseInlineValue(string arg, string optionName, out string value)

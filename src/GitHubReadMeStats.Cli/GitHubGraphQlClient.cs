@@ -64,29 +64,14 @@ query($first: Int!, $after: String) {
 
         while (true)
         {
-            var payload = new
-            {
+            GraphQlResponse<ViewerData> response = await ExecuteGraphQlAsync<ViewerData>(
                 query,
-                variables = new
+                new
                 {
                     first = 50,
                     after = afterCursor,
                 },
-            };
-
-            string responseText = await ExecuteAsync(payload, cancellationToken);
-
-            GraphQlResponse<ViewerData>? response = JsonSerializer.Deserialize<GraphQlResponse<ViewerData>>(responseText, JsonOptions);
-            if (response is null)
-            {
-                throw new InvalidOperationException("GitHub GraphQL returned an empty response.");
-            }
-
-            if (response.Errors is { Count: > 0 })
-            {
-                string errors = string.Join(" | ", response.Errors.Select(x => x.Message));
-                throw new InvalidOperationException($"GitHub GraphQL errors: {errors}");
-            }
+                cancellationToken);
 
             ViewerNode viewer = response.Data?.Viewer
                 ?? throw new InvalidOperationException("GitHub GraphQL response does not contain viewer.");
@@ -126,7 +111,128 @@ query($first: Int!, $after: String) {
         return new ViewerRepositoriesResult(viewerLogin, repositories);
     }
 
-    private async Task<string> ExecuteAsync(object payload, CancellationToken cancellationToken)
+    public async Task<UserSummary> FetchUserSummaryAsync(string username, CancellationToken cancellationToken = default)
+    {
+        const string query = """
+query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    login
+    name
+    createdAt
+    followers {
+      totalCount
+    }
+    repositories(ownerAffiliations: OWNER, isFork: false, privacy: PUBLIC) {
+      totalCount
+    }
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        totalContributions
+      }
+    }
+  }
+}
+""";
+
+        DateTimeOffset from = new(DateTimeOffset.UtcNow.Year, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        DateTimeOffset to = DateTimeOffset.UtcNow;
+
+        GraphQlResponse<UserLookupData> response = await ExecuteGraphQlAsync<UserLookupData>(
+            query,
+            new
+            {
+                login = username,
+                from,
+                to,
+            },
+            cancellationToken);
+
+        UserNode user = response.Data?.User
+            ?? throw new InvalidOperationException($"User not found: {username}");
+
+        return new UserSummary(
+            user.Login ?? username,
+            string.IsNullOrWhiteSpace(user.Name) ? (user.Login ?? username) : user.Name!,
+            user.Followers?.TotalCount ?? 0,
+            user.Repositories?.TotalCount ?? 0,
+            user.ContributionsCollection?.ContributionCalendar?.TotalContributions ?? 0,
+            user.CreatedAt);
+    }
+
+    public async Task<PinCardData> FetchRepositoryCardDataAsync(string owner, string name, CancellationToken cancellationToken = default)
+    {
+        const string query = """
+query($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    name
+    url
+    description
+    isPrivate
+    isArchived
+    stargazerCount
+    forkCount
+    primaryLanguage {
+      name
+      color
+    }
+  }
+}
+""";
+
+        GraphQlResponse<RepositoryLookupData> response = await ExecuteGraphQlAsync<RepositoryLookupData>(
+            query,
+            new
+            {
+                owner,
+                name,
+            },
+            cancellationToken);
+
+        RepositoryNode repository = response.Data?.Repository
+            ?? throw new InvalidOperationException($"Repository not found or inaccessible: {owner}/{name}");
+
+        string language = repository.PrimaryLanguage?.Name ?? "Unknown";
+        string languageColor = NormalizeColor(repository.PrimaryLanguage?.Color);
+
+        return new PinCardData(
+            owner,
+            repository.Name ?? name,
+            repository.Url ?? $"https://github.com/{owner}/{name}",
+            repository.Description ?? "No description provided",
+            repository.StargazerCount,
+            repository.ForkCount,
+            language,
+            languageColor,
+            repository.IsPrivate,
+            repository.IsArchived);
+    }
+
+    private async Task<GraphQlResponse<TData>> ExecuteGraphQlAsync<TData>(string query, object variables, CancellationToken cancellationToken)
+    {
+        var payload = new
+        {
+            query,
+            variables,
+        };
+
+        string responseText = await ExecuteRawAsync(payload, cancellationToken);
+
+        GraphQlResponse<TData>? response = JsonSerializer.Deserialize<GraphQlResponse<TData>>(responseText, JsonOptions);
+        if (response is null)
+        {
+            throw new InvalidOperationException("GitHub GraphQL returned an empty response.");
+        }
+
+        if (response.Errors is { Count: > 0 })
+        {
+            string errors = string.Join(" | ", response.Errors.Select(x => x.Message));
+            throw new InvalidOperationException($"GitHub GraphQL errors: {errors}");
+        }
+
+        return response;
+    }
+
+    private async Task<string> ExecuteRawAsync(object payload, CancellationToken cancellationToken)
     {
         string jsonBody = JsonSerializer.Serialize(payload);
 
@@ -149,5 +255,16 @@ query($first: Int!, $after: String) {
         }
 
         return body;
+    }
+
+    private static string NormalizeColor(string? color)
+    {
+        if (string.IsNullOrWhiteSpace(color))
+        {
+            return "#94A3B8";
+        }
+
+        string trimmed = color.Trim();
+        return trimmed.StartsWith('#') ? trimmed : $"#{trimmed}";
     }
 }

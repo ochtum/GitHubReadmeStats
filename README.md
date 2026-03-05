@@ -8,6 +8,7 @@ GitHub GraphQL API を使ってリポジトリ言語情報を集計し、README 
 - C# / .NET 10 (`net10.0`) 実装
 - GitHub GraphQL API から `viewer.repositories` をページング取得
 - 言語サイズを集計して `output/top-languages.svg` を出力
+- `stats.svg` と `pins/*.svg` を生成して `api/pin` 相当のカードを自前運用可能
 - 任意で README セクションをCLIから自動更新
 - GitHub Actions で定期更新してコミット可能
 
@@ -31,6 +32,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
   --output output/top-languages.svg \
   --exclude-languages "html,css,dockerfile" \
   --top 6 \
+  --cards-config cards-config.json \
+  --cards-output-dir output \
   --update-readme README.md \
   --image-path output/top-languages.svg
 ```
@@ -45,8 +48,23 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `--include-archived`: archived リポジトリも集計
 - `--update-readme`: README更新対象パス
 - `--image-path`: READMEに埋め込む画像パス
+- `--cards-config`: `stats` / `pin` カード生成対象を定義したJSON
+- `--cards-output-dir`: `stats.svg` と `pins/*.svg` の出力先
 
-### 3. GitHub Actions で定期更新
+### 3. cards-config.json 例
+
+```json
+{
+  "username": "ochtum",
+  "repositories": [
+    "ochtum/CaptureScreenMCP",
+    "ochtum/SlackEmojiBookmaker",
+    "microsoft/vscode-generator-code",
+    "tldraw/tldraw"
+  ]
+}
+```
+### 4. GitHub Actions で定期更新
 
 `.github/workflows/update-readme-stats.yml` を用意しています。
 

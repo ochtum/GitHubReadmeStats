@@ -10,6 +10,8 @@ internal sealed record CliOptions(
     string? UpdateReadmePath,
     string ReadmeSectionStartMarker,
     string ReadmeSectionEndMarker,
-    string? ImagePathForReadme);
+    string? ImagePathForReadme,
+    string? CardsConfigPath,
+    string CardsOutputDir);
 
 internal sealed record CliParseResult(CliOptions? Options, string? Error, bool ShowHelp, bool ShowVersion);

@@ -59,6 +59,15 @@ internal static class Program
             Console.WriteLine($"Languages: {aggregation.Languages.Count}");
             Console.WriteLine($"Total size: {SvgRenderer.ToHumanReadableBytes(aggregation.TotalBytes)}");
 
+            if (!string.IsNullOrWhiteSpace(options.CardsConfigPath))
+            {
+                await GenerateAdditionalCardsAsync(
+                    graphqlClient,
+                    repositoriesResult.ViewerLogin,
+                    options,
+                    generatedAtUtc);
+            }
+
             if (!string.IsNullOrWhiteSpace(options.UpdateReadmePath))
             {
                 string readmePath = options.UpdateReadmePath!;
@@ -85,6 +94,38 @@ internal static class Program
         }
     }
 
+    private static async Task GenerateAdditionalCardsAsync(
+        GitHubGraphQlClient graphqlClient,
+        string viewerLogin,
+        CliOptions options,
+        DateTimeOffset generatedAtUtc)
+    {
+        string configPath = options.CardsConfigPath!;
+        CardsConfig config = CardsConfigLoader.Load(configPath, viewerLogin);
+
+        UserSummary summary = await graphqlClient.FetchUserSummaryAsync(config.Username);
+        string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc);
+        string statsPath = Path.Combine(options.CardsOutputDir, "stats.svg");
+        EnsureParentDirectory(statsPath);
+        await File.WriteAllTextAsync(statsPath, statsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        Console.WriteLine($"Generated: {statsPath}");
+
+        string pinOutputDir = Path.Combine(options.CardsOutputDir, "pins");
+        Directory.CreateDirectory(pinOutputDir);
+
+        int generatedPinCount = 0;
+        foreach (PinRepository repo in config.Repositories)
+        {
+            PinCardData data = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
+            string pinSvg = PinCardRenderer.Render(data);
+            string pinPath = Path.Combine(pinOutputDir, $"{SanitizePathSegment(repo.Owner)}-{SanitizePathSegment(repo.Name)}.svg");
+            await File.WriteAllTextAsync(pinPath, pinSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            generatedPinCount++;
+        }
+
+        Console.WriteLine($"Generated pin cards: {generatedPinCount}");
+    }
+
     private static void EnsureParentDirectory(string filePath)
     {
         string? directory = Path.GetDirectoryName(filePath);
@@ -92,6 +133,24 @@ internal static class Program
         {
             Directory.CreateDirectory(directory);
         }
+    }
+
+    private static string SanitizePathSegment(string value)
+    {
+        var invalidCharacters = Path.GetInvalidFileNameChars();
+        var sanitized = new StringBuilder(value.Length);
+        foreach (char c in value)
+        {
+            if (invalidCharacters.Contains(c) || c == '/' || c == '\\')
+            {
+                sanitized.Append('_');
+                continue;
+            }
+
+            sanitized.Append(c);
+        }
+
+        return sanitized.ToString();
     }
 
     private static string ResolveReadmeImagePath(CliOptions options, string readmePath)
