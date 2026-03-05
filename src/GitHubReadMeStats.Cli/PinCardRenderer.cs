@@ -15,7 +15,7 @@ internal static class PinCardRenderer
         string title = repository.Name;
         string description = NormalizeDescription(repository.Description);
 
-        int descriptionColumns = hasTrafficTotals ? 42 : 46;
+        int descriptionColumns = hasTrafficTotals ? 64 : 54;
         string[] lines = WrapDescription(description, maxColumnsPerLine: descriptionColumns, maxLines: 3);
 
         var sb = new StringBuilder();
@@ -29,8 +29,8 @@ internal static class PinCardRenderer
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }");
         sb.AppendLine("      .desc { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .traffic-label { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #93C5FD; }");
-        sb.AppendLine("      .traffic-value { font: 700 15px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
+        sb.AppendLine("      .traffic-label { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #93C5FD; }");
+        sb.AppendLine("      .traffic-value { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .meta { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .sub { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
         sb.AppendLine("      .badge-text { font: 700 9px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }");
@@ -74,21 +74,25 @@ internal static class PinCardRenderer
         if (repository.TrafficTotals is not null)
         {
             RepositoryTrafficTotals totals = repository.TrafficTotals;
-            const int panelX = 270;
-            const int panelY = 92;
-            const int panelW = 201;
-            const int panelH = 88;
-            int panelMiddleX = panelX + (panelW / 2);
-            int panelMiddleY = panelY + (panelH / 2);
+            const int panelX = 24;
+            const int panelY = 124;
+            const int panelW = 447;
+            const int panelH = 58;
+            const int metricColumns = 4;
+            int columnWidth = panelW / metricColumns;
 
             sb.AppendLine($"  <rect x=\"{panelX}\" y=\"{panelY}\" width=\"{panelW}\" height=\"{panelH}\" rx=\"8\" class=\"traffic-panel\" />");
-            sb.AppendLine($"  <line x1=\"{panelMiddleX}\" y1=\"{panelY + 8}\" x2=\"{panelMiddleX}\" y2=\"{panelY + panelH - 8}\" class=\"traffic-sep\" />");
-            sb.AppendLine($"  <line x1=\"{panelX + 8}\" y1=\"{panelMiddleY}\" x2=\"{panelX + panelW - 8}\" y2=\"{panelMiddleY}\" class=\"traffic-sep\" />");
 
-            AppendTrafficCell(sb, panelX + 14, panelY + 18, "Git Clones", totals.CloneCountTotal);
-            AppendTrafficCell(sb, panelMiddleX + 12, panelY + 18, "Unique Cloners", totals.UniqueClonersTotal);
-            AppendTrafficCell(sb, panelX + 14, panelMiddleY + 16, "Total Views", totals.ViewCountTotal);
-            AppendTrafficCell(sb, panelMiddleX + 12, panelMiddleY + 16, "Unique Visitors", totals.UniqueVisitorsTotal);
+            for (int i = 1; i < metricColumns; i++)
+            {
+                int separatorX = panelX + (columnWidth * i);
+                sb.AppendLine($"  <line x1=\"{separatorX}\" y1=\"{panelY + 8}\" x2=\"{separatorX}\" y2=\"{panelY + panelH - 8}\" class=\"traffic-sep\" />");
+            }
+
+            AppendTrafficColumn(sb, panelX + (columnWidth * 0) + (columnWidth / 2), panelY + 18, "Git Clones", totals.CloneCountTotal);
+            AppendTrafficColumn(sb, panelX + (columnWidth * 1) + (columnWidth / 2), panelY + 18, "Unique Cloners", totals.UniqueClonersTotal);
+            AppendTrafficColumn(sb, panelX + (columnWidth * 2) + (columnWidth / 2), panelY + 18, "Total Views", totals.ViewCountTotal);
+            AppendTrafficColumn(sb, panelX + (columnWidth * 3) + (columnWidth / 2), panelY + 18, "Unique Visitors", totals.UniqueVisitorsTotal);
 
             sb.AppendLine($"  <text x=\"24\" y=\"223\" class=\"hint\">Traffic since {totals.SinceDate:yyyy-MM-dd} (last {totals.LastRecordedDate:yyyy-MM-dd})</text>");
         }
@@ -268,10 +272,10 @@ internal static class PinCardRenderer
         return value.ToString("N0", CultureInfo.InvariantCulture);
     }
 
-    private static void AppendTrafficCell(StringBuilder sb, int x, int y, string label, long value)
+    private static void AppendTrafficColumn(StringBuilder sb, int centerX, int y, string label, long value)
     {
-        sb.AppendLine($"  <text x=\"{x}\" y=\"{y}\" class=\"traffic-label\">{EscapeXml(label)}</text>");
-        sb.AppendLine($"  <text x=\"{x}\" y=\"{y + 18}\" class=\"traffic-value\">{FormatMetric(value)}</text>");
+        sb.AppendLine($"  <text x=\"{centerX}\" y=\"{y}\" class=\"traffic-label\" text-anchor=\"middle\">{EscapeXml(label)}</text>");
+        sb.AppendLine($"  <text x=\"{centerX}\" y=\"{y + 22}\" class=\"traffic-value\" text-anchor=\"middle\">{FormatMetric(value)}</text>");
     }
 
     private static (string Fill, string Stroke, string Text) GetStatusBadgeStyle(PinCardData repository)
