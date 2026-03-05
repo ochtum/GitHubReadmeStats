@@ -6,7 +6,7 @@ namespace GitHubReadMeStats.Cli;
 
 internal static class ProfileStatsCardRenderer
 {
-    public static string Render(UserSummary summary, DateTimeOffset generatedAtUtc)
+    public static string Render(UserSummary summary, DateTimeOffset generatedAtUtc, TimeDisplaySettings timeDisplay)
     {
         const int width = 495;
         const int height = 210;
@@ -15,7 +15,8 @@ internal static class ProfileStatsCardRenderer
         const int chartWidth = 245;
         const int chartHeight = 132;
 
-        DateOnly today = DateOnly.FromDateTime(generatedAtUtc.UtcDateTime.Date);
+        DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
+        DateOnly today = DateOnly.FromDateTime(generatedAtLocal.Date);
         IReadOnlyList<MonthlyContributionPoint> monthlySeries = BuildMonthlySeries(summary.ContributionDays, months: 13, today);
         int axisMax = BuildAxisMax(monthlySeries.Max(x => x.Count));
 
@@ -23,7 +24,7 @@ internal static class ProfileStatsCardRenderer
         string linePath = BuildSmoothLinePath(chartPoints);
         string areaPath = BuildSmoothAreaPath(chartPoints, chartY + chartHeight);
 
-        int joinedYears = CalculateJoinedYears(summary.CreatedAt.UtcDateTime.Date, generatedAtUtc.UtcDateTime.Date);
+        int joinedYears = CalculateJoinedYears(summary.CreatedAt.UtcDateTime.Date, generatedAtLocal.Date);
 
         var sb = new StringBuilder();
         sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub profile stats with yearly contribution trend\">");
@@ -54,7 +55,7 @@ internal static class ProfileStatsCardRenderer
         sb.AppendLine($"  <text x=\"18\" y=\"45\" class=\"login\">@{EscapeXml(summary.Login)}</text>");
 
         int metricY = 69;
-        AppendMetricRow(sb, metricY, "#FACC15", $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtUtc.Year}");
+        AppendMetricRow(sb, metricY, "#FACC15", $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtLocal.Year}");
         AppendMetricRow(sb, metricY + 16, "#22D3EE", $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
         AppendMetricRow(sb, metricY + 32, "#38BDF8", $"{summary.PrivateRepositories.ToString("N0", CultureInfo.InvariantCulture)} Private Repositories");
         AppendMetricRow(sb, metricY + 48, "#84CC16", $"Joined GitHub {joinedYears} years ago");
@@ -89,7 +90,7 @@ internal static class ProfileStatsCardRenderer
             sb.AppendLine($"  <text x=\"{FormatNumber(x)}\" y=\"{chartY + chartHeight + 13}\" class=\"xaxis\" text-anchor=\"middle\">{point.Month:yy/MM}</text>");
         }
 
-        sb.AppendLine($"  <text x=\"18\" y=\"198\" class=\"meta\">Updated {generatedAtUtc:yyyy-MM-dd HH:mm} UTC</text>");
+        sb.AppendLine($"  <text x=\"18\" y=\"198\" class=\"meta\">Updated {generatedAtLocal:yyyy-MM-dd HH:mm} {EscapeXml(timeDisplay.Label)}</text>");
         sb.AppendLine("</svg>");
 
         return sb.ToString();

@@ -13,13 +13,14 @@ internal static class ReadmeUpdater
         AggregationResult aggregation,
         int topCount,
         DateTimeOffset generatedAtUtc,
+        TimeDisplaySettings timeDisplay,
         CancellationToken cancellationToken = default)
     {
         string original = File.Exists(readmePath)
             ? await File.ReadAllTextAsync(readmePath, cancellationToken)
             : string.Empty;
 
-        string section = BuildSection(startMarker, endMarker, imagePath, aggregation, topCount, generatedAtUtc);
+        string section = BuildSection(startMarker, endMarker, imagePath, aggregation, topCount, generatedAtUtc, timeDisplay);
 
         string updated;
         int startIndex = original.IndexOf(startMarker, StringComparison.Ordinal);
@@ -70,9 +71,11 @@ internal static class ReadmeUpdater
         string imagePath,
         AggregationResult aggregation,
         int topCount,
-        DateTimeOffset generatedAtUtc)
+        DateTimeOffset generatedAtUtc,
+        TimeDisplaySettings timeDisplay)
     {
         IReadOnlyList<AggregatedLanguage> topLanguages = aggregation.Languages.Take(topCount).ToList();
+        DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
 
         var sb = new StringBuilder();
         sb.AppendLine(startMarker);
@@ -90,7 +93,7 @@ internal static class ReadmeUpdater
         }
 
         sb.AppendLine();
-        sb.AppendLine($"_Updated: {generatedAtUtc:yyyy-MM-dd HH:mm} UTC_  ");
+        sb.AppendLine($"_Updated: {generatedAtLocal:yyyy-MM-dd HH:mm} {timeDisplay.Label}_  ");
         sb.AppendLine($"_Repositories: {aggregation.IncludedRepositoryCount} / {aggregation.ScannedRepositoryCount} (included/scanned)_");
         sb.AppendLine(endMarker);
 

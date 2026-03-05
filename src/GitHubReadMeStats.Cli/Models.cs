@@ -226,7 +226,11 @@ internal sealed record CardsConfig(
     string Username,
     IReadOnlyList<PinRepository> Repositories,
     IReadOnlyDictionary<string, string> LanguageColorOverrides,
-    IReadOnlyDictionary<string, string> LanguageIconOverrides);
+    IReadOnlyDictionary<string, string> LanguageIconOverrides,
+    string? DisplayTimeZone,
+    string? DisplayTimeZoneLabel);
+
+internal sealed record TimeDisplaySettings(TimeZoneInfo TimeZone, string Label);
 
 internal sealed record AggregationResult(
     IReadOnlyList<AggregatedLanguage> Languages,

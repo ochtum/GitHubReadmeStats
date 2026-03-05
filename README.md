@@ -76,6 +76,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 ```json
 {
   "username": "ochtum",
+  "displayTimeZone": "Asia/Tokyo",
+  "displayTimeZoneLabel": "JST",
   "languageColors": {
     "JavaScript": "#f1e05a",
     "TypeScript": "oklch(0.72 0.16 248)"
@@ -110,6 +112,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `languageIcons`: 言語名単位のアイコン上書き（`PrimaryLanguage` に一致したとき適用）
 - `repositories[].languageIcon`: そのリポジトリだけの言語アイコン上書き（`languageIcons` がない場合に適用）
 - `repositories[].icon`: アイコン指定（`cards-config.json` からの相対パス、絶対パス、`https://...`、`data:image/...` をサポート）
+- `displayTimeZone`: `updated` 表示時刻のタイムゾーン（未指定時は `UTC`）
+- `displayTimeZoneLabel`: 表示ラベル（例: `JST`。未指定時は `UTC` / `UTC+09:00` / `Asia/Tokyo` などを自動決定）
 
 ## CLI Options
 

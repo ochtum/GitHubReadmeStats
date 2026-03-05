@@ -41,7 +41,19 @@ internal static class Program
             var graphqlClient = new GitHubGraphQlClient(httpClient, options.GitHubToken);
             ViewerRepositoriesResult repositoriesResult = await graphqlClient.FetchOwnedRepositoriesAsync();
 
+            CardsConfig? cardsConfig = null;
+            if (!string.IsNullOrWhiteSpace(options.CardsConfigPath))
+            {
+                cardsConfig = CardsConfigLoader.Load(options.CardsConfigPath!, repositoriesResult.ViewerLogin);
+            }
+            TimeDisplaySettings timeDisplay = ResolveTimeDisplaySettings(cardsConfig);
+
             AggregationResult aggregation = LanguageAggregator.Aggregate(repositoriesResult.Repositories, options);
+            if (cardsConfig is not null)
+            {
+                aggregation = ApplyLanguageColorOverrides(aggregation, cardsConfig.LanguageColorOverrides);
+            }
+
             if (aggregation.Languages.Count == 0)
             {
                 Console.Error.WriteLine("No language data was collected. Check repository visibility, token scopes, and filters.");
@@ -49,7 +61,7 @@ internal static class Program
             }
 
             DateTimeOffset generatedAtUtc = DateTimeOffset.UtcNow;
-            string svg = SvgRenderer.Render(repositoriesResult.ViewerLogin, aggregation, options.Top, generatedAtUtc);
+            string svg = SvgRenderer.Render(repositoriesResult.ViewerLogin, aggregation, options.Top, generatedAtUtc, timeDisplay);
 
             EnsureParentDirectory(options.OutputPath);
             await File.WriteAllTextAsync(options.OutputPath, svg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -64,9 +76,10 @@ internal static class Program
             {
                 await GenerateAdditionalCardsAsync(
                     graphqlClient,
-                    repositoriesResult.ViewerLogin,
                     options,
-                    generatedAtUtc);
+                    generatedAtUtc,
+                    cardsConfig!,
+                    timeDisplay);
             }
 
             if (!string.IsNullOrWhiteSpace(options.UpdateReadmePath))
@@ -81,7 +94,8 @@ internal static class Program
                     imagePathForReadme,
                     aggregation,
                     options.Top,
-                    generatedAtUtc);
+                    generatedAtUtc,
+                    timeDisplay);
 
                 Console.WriteLine($"Updated README section: {readmePath}");
             }
@@ -97,16 +111,16 @@ internal static class Program
 
     private static async Task GenerateAdditionalCardsAsync(
         GitHubGraphQlClient graphqlClient,
-        string viewerLogin,
         CliOptions options,
-        DateTimeOffset generatedAtUtc)
+        DateTimeOffset generatedAtUtc,
+        CardsConfig config,
+        TimeDisplaySettings timeDisplay)
     {
         string configPath = options.CardsConfigPath!;
-        CardsConfig config = CardsConfigLoader.Load(configPath, viewerLogin);
         string configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Directory.GetCurrentDirectory();
 
         UserSummary summary = await graphqlClient.FetchUserSummaryAsync(config.Username);
-        string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc);
+        string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc, timeDisplay);
         string statsPath = Path.Combine(options.CardsOutputDir, "stats.svg");
         EnsureParentDirectory(statsPath);
         await File.WriteAllTextAsync(statsPath, statsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -189,6 +203,167 @@ internal static class Program
         }
 
         Console.WriteLine($"Generated pin cards: {generatedPinCount}");
+    }
+
+    private static TimeDisplaySettings ResolveTimeDisplaySettings(CardsConfig? config)
+    {
+        if (config is null || string.IsNullOrWhiteSpace(config.DisplayTimeZone))
+        {
+            return new TimeDisplaySettings(TimeZoneInfo.Utc, "UTC");
+        }
+
+        string configuredTimeZone = config.DisplayTimeZone.Trim();
+        if (!TryResolveTimeZoneInfo(configuredTimeZone, out TimeZoneInfo timeZone))
+        {
+            Console.WriteLine(
+                $"Warning: displayTimeZone '{configuredTimeZone}' is not supported on this runner. " +
+                "Falling back to UTC.");
+            return new TimeDisplaySettings(TimeZoneInfo.Utc, "UTC");
+        }
+
+        string label = string.IsNullOrWhiteSpace(config.DisplayTimeZoneLabel)
+            ? BuildDefaultTimeZoneLabel(timeZone)
+            : config.DisplayTimeZoneLabel.Trim();
+
+        return new TimeDisplaySettings(timeZone, label);
+    }
+
+    private static bool TryResolveTimeZoneInfo(string value, out TimeZoneInfo timeZone)
+    {
+        timeZone = TimeZoneInfo.Utc;
+        string trimmed = value.Trim();
+        if (trimmed.Equals("UTC", StringComparison.OrdinalIgnoreCase))
+        {
+            timeZone = TimeZoneInfo.Utc;
+            return true;
+        }
+
+        if (trimmed.StartsWith("UTC", StringComparison.OrdinalIgnoreCase))
+        {
+            string offsetText = trimmed[3..].Trim();
+            if (string.IsNullOrWhiteSpace(offsetText))
+            {
+                timeZone = TimeZoneInfo.Utc;
+                return true;
+            }
+
+            if (TryParseUtcOffset(offsetText, out TimeSpan offset))
+            {
+                string id = "UTC" + FormatUtcOffset(offset);
+                timeZone = TimeZoneInfo.CreateCustomTimeZone(id, offset, id, id);
+                return true;
+            }
+        }
+
+        if (TryParseUtcOffset(trimmed, out TimeSpan directOffset))
+        {
+            string id = "UTC" + FormatUtcOffset(directOffset);
+            timeZone = TimeZoneInfo.CreateCustomTimeZone(id, directOffset, id, id);
+            return true;
+        }
+
+        if (trimmed.Equals("JST", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = "Asia/Tokyo";
+        }
+
+        try
+        {
+            timeZone = TimeZoneInfo.FindSystemTimeZoneById(trimmed);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryParseUtcOffset(string value, out TimeSpan offset)
+    {
+        offset = TimeSpan.Zero;
+        string trimmed = value.Trim();
+        Match match = Regex.Match(trimmed, "^([+-])(\\d{1,2})(?::?(\\d{2}))?$");
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        int hours = int.Parse(match.Groups[2].Value);
+        int minutes = match.Groups[3].Success ? int.Parse(match.Groups[3].Value) : 0;
+        if (hours > 14 || minutes > 59)
+        {
+            return false;
+        }
+
+        offset = new TimeSpan(hours, minutes, 0);
+        if (match.Groups[1].Value == "-")
+        {
+            offset = -offset;
+        }
+
+        return true;
+    }
+
+    private static string BuildDefaultTimeZoneLabel(TimeZoneInfo timeZone)
+    {
+        if (timeZone.Id.Equals("UTC", StringComparison.OrdinalIgnoreCase))
+        {
+            return "UTC";
+        }
+
+        if (timeZone.Id.Equals("Asia/Tokyo", StringComparison.OrdinalIgnoreCase) ||
+            timeZone.StandardName.Contains("Tokyo", StringComparison.OrdinalIgnoreCase))
+        {
+            return "JST";
+        }
+
+        if (timeZone.Id.StartsWith("UTC", StringComparison.OrdinalIgnoreCase))
+        {
+            return timeZone.Id;
+        }
+
+        return timeZone.Id;
+    }
+
+    private static string FormatUtcOffset(TimeSpan offset)
+    {
+        string sign = offset < TimeSpan.Zero ? "-" : "+";
+        TimeSpan absolute = offset.Duration();
+        int hours = absolute.Hours + (absolute.Days * 24);
+        return $"{sign}{hours:00}:{absolute.Minutes:00}";
+    }
+
+    private static AggregationResult ApplyLanguageColorOverrides(
+        AggregationResult aggregation,
+        IReadOnlyDictionary<string, string> colorOverrides)
+    {
+        if (colorOverrides.Count == 0)
+        {
+            return aggregation;
+        }
+
+        bool changed = false;
+        var languages = new List<AggregatedLanguage>(aggregation.Languages.Count);
+        foreach (AggregatedLanguage language in aggregation.Languages)
+        {
+            if (colorOverrides.TryGetValue(language.Name, out string? overrideColor))
+            {
+                string? normalized = NormalizeCssColor(overrideColor);
+                if (!string.IsNullOrWhiteSpace(normalized) &&
+                    !string.Equals(normalized, language.Color, StringComparison.OrdinalIgnoreCase))
+                {
+                    languages.Add(language with { Color = normalized });
+                    changed = true;
+                    continue;
+                }
+            }
+
+            languages.Add(language);
+        }
+
+        return changed
+            ? aggregation with { Languages = languages }
+            : aggregation;
     }
 
     private static void EnsureParentDirectory(string filePath)

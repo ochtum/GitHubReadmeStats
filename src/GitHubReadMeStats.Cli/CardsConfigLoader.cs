@@ -18,8 +18,16 @@ internal static class CardsConfigLoader
         IReadOnlyList<PinRepository> repositories = ReadRepositories(root);
         IReadOnlyDictionary<string, string> languageColorOverrides = ReadLanguageColorOverrides(root);
         IReadOnlyDictionary<string, string> languageIconOverrides = ReadLanguageIconOverrides(root);
+        string? displayTimeZone = ReadDisplayTimeZone(root);
+        string? displayTimeZoneLabel = ReadDisplayTimeZoneLabel(root);
 
-        return new CardsConfig(username, repositories, languageColorOverrides, languageIconOverrides);
+        return new CardsConfig(
+            username,
+            repositories,
+            languageColorOverrides,
+            languageIconOverrides,
+            displayTimeZone,
+            displayTimeZoneLabel);
     }
 
     private static string ReadUsername(JsonElement root, string defaultUsername)
@@ -127,6 +135,24 @@ internal static class CardsConfigLoader
         }
 
         return result;
+    }
+
+    private static string? ReadDisplayTimeZone(JsonElement root)
+    {
+        return NormalizeNullable(
+            ReadStringProperty(root, "displayTimeZone")
+            ?? ReadStringProperty(root, "displayTimezone")
+            ?? ReadStringProperty(root, "timeZone")
+            ?? ReadStringProperty(root, "timezone"));
+    }
+
+    private static string? ReadDisplayTimeZoneLabel(JsonElement root)
+    {
+        return NormalizeNullable(
+            ReadStringProperty(root, "displayTimeZoneLabel")
+            ?? ReadStringProperty(root, "displayTimezoneLabel")
+            ?? ReadStringProperty(root, "timeZoneLabel")
+            ?? ReadStringProperty(root, "timezoneLabel"));
     }
 
     private static PinRepository? ParseRepository(JsonElement element)
