@@ -15,7 +15,7 @@ internal static class PinCardRenderer
         string title = repository.Name;
         string description = NormalizeDescription(repository.Description);
 
-        int descriptionColumns = hasTrafficTotals ? 31 : 46;
+        int descriptionColumns = hasTrafficTotals ? 42 : 46;
         string[] lines = WrapDescription(description, maxColumnsPerLine: descriptionColumns, maxLines: 3);
 
         var sb = new StringBuilder();
@@ -74,10 +74,10 @@ internal static class PinCardRenderer
         if (repository.TrafficTotals is not null)
         {
             RepositoryTrafficTotals totals = repository.TrafficTotals;
-            const int panelX = 248;
-            const int panelY = 102;
-            const int panelW = 223;
-            const int panelH = 82;
+            const int panelX = 270;
+            const int panelY = 92;
+            const int panelW = 201;
+            const int panelH = 88;
             int panelMiddleX = panelX + (panelW / 2);
             int panelMiddleY = panelY + (panelH / 2);
 
@@ -95,9 +95,11 @@ internal static class PinCardRenderer
 
         string language = string.IsNullOrWhiteSpace(repository.PrimaryLanguage) ? "Unknown" : repository.PrimaryLanguage;
         string languageColor = string.IsNullOrWhiteSpace(repository.PrimaryLanguageColor) ? "#94A3B8" : repository.PrimaryLanguageColor;
-        int metaY = hasTrafficTotals ? 191 : 166;
-        int dotY = hasTrafficTotals ? 187 : 162;
-        int subY = hasTrafficTotals ? 208 : 184;
+        int metaY = hasTrafficTotals ? 200 : 166;
+        int dotY = hasTrafficTotals ? 196 : 162;
+        int subY = hasTrafficTotals ? 214 : 184;
+        int starX = hasTrafficTotals ? 144 : 220;
+        int forkX = hasTrafficTotals ? 208 : 300;
 
         if (!string.IsNullOrWhiteSpace(repository.LanguageIconHref))
         {
@@ -111,8 +113,8 @@ internal static class PinCardRenderer
         }
 
         sb.AppendLine($"  <text x=\"40\" y=\"{metaY}\" class=\"meta\">{EscapeXml(language)}</text>");
-        sb.AppendLine($"  <text x=\"220\" y=\"{metaY}\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
-        sb.AppendLine($"  <text x=\"300\" y=\"{metaY}\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <text x=\"{starX}\" y=\"{metaY}\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <text x=\"{forkX}\" y=\"{metaY}\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
 
         string repositoryPath = $"{repository.Owner}/{repository.Name}";
         string badgeLabel = repository.IsPrivate ? "PRIVATE" : repository.IsArchived ? "ARCHIVED" : "PUBLIC";
