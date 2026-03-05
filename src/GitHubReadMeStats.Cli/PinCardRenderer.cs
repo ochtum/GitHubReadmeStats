@@ -29,13 +29,22 @@ internal static class PinCardRenderer
         sb.AppendLine("      .desc { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
         sb.AppendLine("      .meta { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .sub { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine("      .icon-frame { fill: #0F1E3D; stroke: #3B82F6; stroke-width: 1.4; }");
+        sb.AppendLine("      .icon-shape { fill: none; stroke: #7DD3FC; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }");
+        sb.AppendLine("      .icon-dot { fill: #22D3EE; }");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
         sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"8\" fill=\"url(#bg)\" />");
         sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"7\" fill=\"none\" stroke=\"#334155\" />");
+        sb.AppendLine("  <g transform=\"translate(24 18)\">");
+        sb.AppendLine("    <rect x=\"0\" y=\"0\" width=\"28\" height=\"28\" rx=\"7\" class=\"icon-frame\" />");
+        sb.AppendLine("    <path d=\"M6 10h6l2.2 3H22v9H6z\" class=\"icon-shape\" />");
+        sb.AppendLine("    <path d=\"M6 13h16\" class=\"icon-shape\" />");
+        sb.AppendLine("    <circle cx=\"20\" cy=\"8\" r=\"2\" class=\"icon-dot\" />");
+        sb.AppendLine("  </g>");
 
-        sb.AppendLine("  <text x=\"24\" y=\"40\" class=\"title\">▣ " + EscapeXml(title) + "</text>");
+        sb.AppendLine("  <text x=\"62\" y=\"40\" class=\"title\">" + EscapeXml(title) + "</text>");
 
         for (int i = 0; i < lines.Length; i++)
         {
