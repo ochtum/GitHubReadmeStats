@@ -1,57 +1,72 @@
 # GitHubReadMeStats (.NET 10 / C#)
 
-GitHub GraphQL API を使ってリポジトリ言語情報を集計し、README に貼れる SVG を生成する CLI です。  
-`repo-spector` と Zenn 記事のフローを参考に、GitHub Actions で自動更新できる構成にしています。
+GitHub GraphQL API を使って、プロフィール README 向けの SVG を自前生成する CLI です。  
+`top-languages.svg` に加えて、`stats.svg` と `pins/*.svg` も出力できます。
+
+## このリポジトリの役割
+
+このリポジトリは「生成ツール」です。  
+実運用では、各ユーザーのプロフィールリポジトリ（`<user>/<user>`）側の GitHub Actions から本ツールを呼び出す構成を推奨します。
 
 ## Features
 
-- C# / .NET 10 (`net10.0`) 実装
-- GitHub GraphQL API から `viewer.repositories` をページング取得
-- 言語サイズを集計して `output/top-languages.svg` を出力
-- `stats.svg` と `pins/*.svg` を生成して `api/pin` 相当のカードを自前運用可能
-- 任意で README セクションをCLIから自動更新
-- GitHub Actions で定期更新してコミット可能
+- C# / .NET 10 (`net10.0`)
+- GitHub GraphQL API から `viewer.repositories(ownerAffiliations: OWNER)` をページング取得
+- 言語集計カード: `top-languages.svg`
+- プロフィールサマリーカード: `stats.svg`
+- リポジトリカード: `pins/<owner>-<repo>.svg`
+- README セクション自動更新 (`--update-readme`)
 
 ## Requirements
 
 - .NET SDK 10
-- GitHub Personal Access Token (`GH_TOKEN`)
+- GitHub Personal Access Token (`GH_TOKEN` または `GITHUB_TOKEN` 環境変数)
 
-推奨スコープ:
+## Token 権限の目安
 
-- `repo` (private repository を含める場合)
-- public のみなら最小権限で利用
+- Classic PAT: `repo` を付与すると private repo を含めて扱いやすいです。
+- Fine-grained PAT: 実行対象ユーザーの必要なリポジトリに `Contents: Read` を付与してください。
+- private repo を集計/カード化する場合は、その private repo への参照権限が必要です。
 
-## Usage
+## 事前準備
 
-### 1. ローカル実行
+プロフィールリポジトリで動かす前に、次を準備してください。
+
+1. GitHub PAT を作成
+
+- GitHub 右上アイコン -> `Settings` -> `Developer settings` -> `Personal access tokens` を開く
+- `Tokens (classic)` なら `Generate new token (classic)` で発行し、`repo` スコープを付与
+- `Fine-grained tokens` を使う場合は、対象リポジトリに `Contents: Read` を付与
+- 発行後、表示されるトークン文字列を控える（再表示できません）
+
+2. プロフィールリポジトリ (`<user>/<user>`) に Secrets を設定
+
+- `Settings` -> `Secrets and variables` -> `Actions` -> `New repository secret`
+- `GH_TOKEN`: 1で発行した PAT を設定
+- `EXCLUDED_LANGUAGES` (任意): 除外したい言語を CSV で設定  
+  例: `html,css,dockerfile,jupyter notebook`
+
+3. private ツールリポジトリを checkout する場合の追加要件
+
+- workflow の `actions/checkout` で `repository: ochtum/GitHubReadmeStats` を指定するなら、`GH_TOKEN` がそのリポジトリを読める必要があります
+- workflow 側で `token: ${{ secrets.GH_TOKEN }}` を指定してください（READMEのサンプルにコメント付きで記載）
+
+## Quick Start (local)
 
 ```bash
 export GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+
 dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
   --output output/top-languages.svg \
   --exclude-languages "html,css,dockerfile" \
   --top 6 \
   --cards-config cards-config.json \
-  --cards-output-dir output \
-  --update-readme README.md \
-  --image-path output/top-languages.svg
+  --cards-output-dir output
 ```
 
-### 2. 主なオプション
+## cards-config.json
 
-- `--github-token` / `GH_TOKEN` / `GITHUB_TOKEN`: GitHub Token
-- `--output`: SVG出力先 (default: `output/top-languages.svg`)
-- `--exclude-languages` (`-x`): 除外言語CSV
-- `--top`: 表示する上位言語数 (`1..20`)
-- `--include-forks`: fork リポジトリも集計
-- `--include-archived`: archived リポジトリも集計
-- `--update-readme`: README更新対象パス
-- `--image-path`: READMEに埋め込む画像パス
-- `--cards-config`: `stats` / `pin` カード生成対象を定義したJSON
-- `--cards-output-dir`: `stats.svg` と `pins/*.svg` の出力先
-
-### 3. cards-config.json 例
+`--cards-config` を指定すると `stats.svg` と `pins/*.svg` が生成されます。
 
 ```json
 {
@@ -60,38 +75,173 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
     "ochtum/CaptureScreenMCP",
     "ochtum/SlackEmojiBookmaker",
     "microsoft/vscode-generator-code",
-    "tldraw/tldraw"
+    { "owner": "tldraw", "name": "tldraw" }
   ]
 }
 ```
-### 4. GitHub Actions で定期更新
 
-`.github/workflows/update-readme-stats.yml` を用意しています。
+## CLI Options
 
-設定する Secrets:
+- `--github-token`, `-t`: GitHub token
+- `--output`, `-o`: 言語カード SVG の出力先 (default: `output/top-languages.svg`)
+- `--exclude-languages`, `-x`: 除外言語 CSV
+- `--top`: 表示する上位言語数 (`1..20`)
+- `--include-forks`: fork を集計対象に含める
+- `--include-archived`: archived を集計対象に含める
+- `--update-readme`: README 更新対象パス
+- `--image-path`: README に埋め込む画像パス
+- `--start-marker`: README セクション開始マーカー
+- `--end-marker`: README セクション終了マーカー
+- `--cards-config`: stats/pin カード生成設定 JSON
+- `--cards-output-dir`: stats/pin の出力先ディレクトリ (default: `output`)
 
-- `GH_TOKEN`: GitHub Personal Access Token
-- `EXCLUDED_LANGUAGES`: 除外言語CSV (例: `html,css,dockerfile`)
+## プロフィールリポジトリでの導入手順
 
-## Output Example
+対象は `<user>/<user>` プロフィールリポジトリです。
 
-`output/top-languages.svg` を README から参照します。
+1. `.github/workflows/update-profile-readme-stats.yml` を作成
 
-<!-- github-readme-stats:start -->
-## GitHub Readme Stats
+```yaml
+name: update-profile-readme-stats
 
-![Top Languages](output/top-languages.svg)
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
 
-| Rank | Language | Size | Share |
-| ---: | :-- | ---: | ---: |
-| 1 | Python | 133.33 KB | 42.18% |
-| 2 | JavaScript | 65.7 KB | 20.78% |
-| 3 | HTML | 45.77 KB | 14.48% |
-| 4 | CSS | 34.08 KB | 10.78% |
-| 5 | C# | 19.91 KB | 6.30% |
-| 6 | TypeScript | 6.39 KB | 2.02% |
+permissions:
+  contents: write
 
-_Updated: 2026-03-05 15:30 UTC_  
-_Repositories: 20 / 115 (included/scanned)_
-<!-- github-readme-stats:end -->
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout profile repository
+        uses: actions/checkout@v4
+
+      - name: Checkout stats generator repository
+        uses: actions/checkout@v4
+        with:
+          repository: ochtum/GitHubReadmeStats
+          ref: main
+          path: tools/github-readme-stats
+          # ツールrepoをprivate運用する場合のみ必要
+          # token: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Generate cards
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          EXCLUDED_LANGUAGES: ${{ secrets.EXCLUDED_LANGUAGES }}
+        run: |
+          mkdir -p output output/pins
+          dotnet run --project tools/github-readme-stats/src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj --configuration Release -- \
+            --output output/top-languages.svg \
+            --exclude-languages "${EXCLUDED_LANGUAGES}" \
+            --top 6 \
+            --cards-config cards-config.json \
+            --cards-output-dir output
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md cards-config.json output/top-languages.svg output/stats.svg output/pins/*.svg
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: update profile readme stats"
+          git push
+```
+
+2. リポジトリ直下に `cards-config.json` を作成
+
+```json
+{
+  "username": "your-github-id",
+  "repositories": [
+    "your-github-id/your-repo-1",
+    "your-github-id/your-repo-2",
+    "microsoft/vscode-generator-code"
+  ]
+}
+```
+
+3. 事前準備セクションに従って Secrets を設定
+
+- `GH_TOKEN`: GraphQL 取得用の PAT
+- `EXCLUDED_LANGUAGES`: 任意 (例: `html,css,dockerfile`)
+
+4. `Actions -> update-profile-readme-stats -> Run workflow` を実行
+
+## README.md への埋め込みサンプル
+
+`<user>/<user>` の `README.md` に、次のように記載すると生成済みカードを表示できます。
+
+```md
+## Weekly Update
+<p align="center">
+  <a href="https://github.com/ochtum/GitHubReadmeStats">
+    <img src="./output/top-languages.svg" alt="Top Languages" height="250" />
+  </a>
+</p>
+
+## GitHub Stats
+![GitHub stats](./output/stats.svg)
+
+## My Projects
+<a href="https://github.com/your-github-id/your-repo-1">
+  <img align="center" src="./output/pins/your-github-id-your-repo-1.svg" />
+</a>
+<a href="https://github.com/microsoft/vscode-generator-code">
+  <img align="center" src="./output/pins/microsoft-vscode-generator-code.svg" />
+</a>
+```
+
+`pins` のファイル名は `owner-repo.svg` 形式です。  
+例: `microsoft/vscode-generator-code` -> `./output/pins/microsoft-vscode-generator-code.svg`
+
+## このリポジトリの Actions について
+
+このリポジトリには自己更新用の workflow (`.github/workflows/update-readme-stats.yml`) がありますが、利用者に必須ではありません。  
+公開ツールとして使うだけなら、利用者側プロフィールリポジトリの workflow だけで運用できます。
+
+## 制約
+
+- `top-languages` 集計対象は、実行トークンの `viewer` が所有するリポジトリです。
+- `pins` は `cards-config.json` で指定した `owner/repo` を個別取得します。
+- アクセス権のない private repo は取得できません。
+
+## 定期実行したい場合
+
+- 導入手順の workflow サンプルには、すでに `schedule` が含まれています。
+- 実行時刻を変えたい場合は、`cron` の値だけ変更してください（UTC基準）。
+- 例: 毎週月曜 09:00 JST に実行したい場合は `0 0 * * 1`（UTC）です。
+- `schedule` 実行はデフォルトブランチの最新コミットに対して実行されます。
+- `schedule` の最短間隔は 5 分です。
+- GitHub 側の高負荷時は、`schedule` 実行が遅延することがあります。
+- public リポジトリでは、60 日間リポジトリ活動がないと schedule が自動無効化される場合があります。無効化された場合は `Actions` 画面から再有効化してください。
+
+```yaml
+on:
+  schedule:
+    - cron: "0 0 * * 1" # ここを変更する
+  workflow_dispatch:
+```
+
+よく使う例:
+
+- 毎日 09:00 JST: `0 0 * * *`
+- 毎週 月曜 09:00 JST: `0 0 * * 1`
+- 毎月 1日 09:00 JST: `0 0 1 * *`
+
+## 参考
+
+- https://zenn.dev/chot/articles/30b08c452795eb
+- https://github.com/4okimi7uki/repo-spector
 
