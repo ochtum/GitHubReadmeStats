@@ -11,22 +11,22 @@ internal static class ProfileStatsCardRenderer
         const int width = 495;
         const int height = 210;
         const int chartX = 224;
-        const int chartY = 32;
+        const int chartY = 26;
         const int chartWidth = 245;
         const int chartHeight = 132;
 
         DateOnly today = DateOnly.FromDateTime(generatedAtUtc.UtcDateTime.Date);
-        IReadOnlyList<int> series = BuildDailySeries(summary.ContributionDays, days: 56, today);
-        int axisMax = BuildAxisMax(series.Max());
+        IReadOnlyList<MonthlyContributionPoint> monthlySeries = BuildMonthlySeries(summary.ContributionDays, months: 13, today);
+        int axisMax = BuildAxisMax(monthlySeries.Max(x => x.Count));
 
-        string areaPath = BuildAreaPath(series, chartX, chartY, chartWidth, chartHeight, axisMax);
-        string linePath = BuildLinePath(series, chartX, chartY, chartWidth, chartHeight, axisMax);
-        IReadOnlyList<(int Index, DateOnly Date)> xTicks = BuildXAxisTicks(series.Count, today.AddDays(-(series.Count - 1)));
+        List<(double X, double Y)> chartPoints = BuildChartPoints(monthlySeries, chartX, chartY, chartWidth, chartHeight, axisMax);
+        string linePath = BuildSmoothLinePath(chartPoints);
+        string areaPath = BuildSmoothAreaPath(chartPoints, chartY + chartHeight);
 
         int joinedYears = CalculateJoinedYears(summary.CreatedAt.UtcDateTime.Date, generatedAtUtc.UtcDateTime.Date);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub profile stats with contribution trend\">");
+        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub profile stats with yearly contribution trend\">");
         sb.AppendLine("  <defs>");
         sb.AppendLine("    <linearGradient id=\"bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\">");
         sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#090E2C\" />");
@@ -34,13 +34,12 @@ internal static class ProfileStatsCardRenderer
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <linearGradient id=\"area\" x1=\"0\" x2=\"0\" y1=\"0\" y2=\"1\">");
         sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#16F2D1\" stop-opacity=\"0.95\" />");
-        sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#0EA5E9\" stop-opacity=\"0.25\" />");
+        sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#16F2D1\" stop-opacity=\"0.05\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 26px 'Segoe UI', Arial, sans-serif; fill: #F43F98; }");
         sb.AppendLine("      .login { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .label { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
-        sb.AppendLine("      .value { font: 700 11px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
+        sb.AppendLine("      .value { font: 700 11px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
         sb.AppendLine("      .axis { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #38BDF8; }");
         sb.AppendLine("      .xaxis { font: 600 8px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
         sb.AppendLine("      .meta { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
@@ -56,22 +55,21 @@ internal static class ProfileStatsCardRenderer
 
         int metricY = 69;
         AppendMetricRow(sb, metricY, "#FACC15", $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtUtc.Year}");
-        AppendMetricRow(sb, metricY + 18, "#22D3EE", $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
-        AppendMetricRow(sb, metricY + 36, "#84CC16", $"Joined GitHub {joinedYears} years ago");
-        AppendMetricRow(sb, metricY + 54, "#A78BFA", $"{summary.Followers.ToString("N0", CultureInfo.InvariantCulture)} Followers");
+        AppendMetricRow(sb, metricY + 16, "#22D3EE", $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
+        AppendMetricRow(sb, metricY + 32, "#38BDF8", $"{summary.PrivateRepositories.ToString("N0", CultureInfo.InvariantCulture)} Private Repositories");
+        AppendMetricRow(sb, metricY + 48, "#84CC16", $"Joined GitHub {joinedYears} years ago");
         if (!string.IsNullOrWhiteSpace(summary.Location))
         {
-            AppendMetricRow(sb, metricY + 72, "#F472B6", EscapeXml(summary.Location!));
+            AppendMetricRow(sb, metricY + 64, "#F472B6", summary.Location!);
         }
 
-        sb.AppendLine($"  <text x=\"{chartX + chartWidth - 96}\" y=\"16\" class=\"chart-title\">contributions in the last 8 weeks</text>");
+        sb.AppendLine($"  <text x=\"{chartX + chartWidth - 104}\" y=\"14\" class=\"chart-title\">contributions in the last year</text>");
         sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{chartY}\" width=\"{chartWidth}\" height=\"{chartHeight}\" rx=\"4\" fill=\"#020817\" fill-opacity=\"0.25\" />");
 
-        for (int i = 0; i <= 4; i++)
+        for (int value = 0; value <= axisMax; value += 20)
         {
-            double ratio = i / 4.0;
-            double y = chartY + (chartHeight * ratio);
-            int value = (int)Math.Round(axisMax * (1.0 - ratio), MidpointRounding.AwayFromZero);
+            double ratio = axisMax == 0 ? 0 : value / (double)axisMax;
+            double y = chartY + chartHeight - (chartHeight * ratio);
             sb.AppendLine($"  <line x1=\"{chartX}\" y1=\"{FormatNumber(y)}\" x2=\"{chartX + chartWidth}\" y2=\"{FormatNumber(y)}\" stroke=\"#1E3A8A\" stroke-opacity=\"0.55\" />");
             sb.AppendLine($"  <text x=\"{chartX + chartWidth + 6}\" y=\"{FormatNumber(y + 3)}\" class=\"axis\">{value}</text>");
         }
@@ -79,10 +77,16 @@ internal static class ProfileStatsCardRenderer
         sb.AppendLine($"  <path d=\"{areaPath}\" fill=\"url(#area)\" stroke=\"none\" />");
         sb.AppendLine($"  <path d=\"{linePath}\" fill=\"none\" stroke=\"#06B6D4\" stroke-width=\"2\" />");
 
-        foreach ((int index, DateOnly date) in xTicks)
+        for (int i = 0; i < monthlySeries.Count; i++)
         {
-            double x = chartX + (chartWidth * index / (double)Math.Max(1, series.Count - 1));
-            sb.AppendLine($"  <text x=\"{FormatNumber(x)}\" y=\"{chartY + chartHeight + 13}\" class=\"xaxis\" text-anchor=\"middle\">{date:MM/dd}</text>");
+            if (i % 2 != 0 && i != monthlySeries.Count - 1)
+            {
+                continue;
+            }
+
+            MonthlyContributionPoint point = monthlySeries[i];
+            double x = chartX + (chartWidth * i / (double)Math.Max(1, monthlySeries.Count - 1));
+            sb.AppendLine($"  <text x=\"{FormatNumber(x)}\" y=\"{chartY + chartHeight + 13}\" class=\"xaxis\" text-anchor=\"middle\">{point.Month:yy/MM}</text>");
         }
 
         sb.AppendLine($"  <text x=\"18\" y=\"198\" class=\"meta\">Updated {generatedAtUtc:yyyy-MM-dd HH:mm} UTC</text>");
@@ -91,23 +95,21 @@ internal static class ProfileStatsCardRenderer
         return sb.ToString();
     }
 
-    private static IReadOnlyList<int> BuildDailySeries(IReadOnlyList<ContributionDaySummary> source, int days, DateOnly today)
+    private static IReadOnlyList<MonthlyContributionPoint> BuildMonthlySeries(IReadOnlyList<ContributionDaySummary> source, int months, DateOnly today)
     {
-        var map = source
-            .GroupBy(x => x.Date)
-            .ToDictionary(g => g.Key, g => g.Last().ContributionCount);
+        DateOnly currentMonthStart = new(today.Year, today.Month, 1);
+        DateOnly firstMonthStart = currentMonthStart.AddMonths(-(months - 1));
 
-        var result = new List<int>(days);
-        DateOnly start = today.AddDays(-(days - 1));
-        for (int i = 0; i < days; i++)
+        var result = new List<MonthlyContributionPoint>(months);
+        for (int i = 0; i < months; i++)
         {
-            DateOnly date = start.AddDays(i);
-            if (!map.TryGetValue(date, out int count))
-            {
-                count = 0;
-            }
+            DateOnly monthStart = firstMonthStart.AddMonths(i);
+            DateOnly monthEnd = monthStart.AddMonths(1).AddDays(-1);
+            int count = source
+                .Where(x => x.Date >= monthStart && x.Date <= monthEnd)
+                .Sum(x => x.ContributionCount);
 
-            result.Add(Math.Max(0, count));
+            result.Add(new MonthlyContributionPoint(monthStart, Math.Max(0, count)));
         }
 
         return result;
@@ -115,65 +117,101 @@ internal static class ProfileStatsCardRenderer
 
     private static int BuildAxisMax(int observedMax)
     {
-        int max = Math.Max(observedMax, 10);
-        int step = Math.Max(5, (int)Math.Ceiling(max / 20.0) * 5);
-        return step * 4;
+        int rounded = (int)Math.Ceiling(Math.Max(observedMax, 20) / 20.0) * 20;
+        return Math.Max(100, rounded);
     }
 
-    private static string BuildAreaPath(IReadOnlyList<int> points, int chartX, int chartY, int chartWidth, int chartHeight, int axisMax)
+    private static List<(double X, double Y)> BuildChartPoints(
+        IReadOnlyList<MonthlyContributionPoint> monthlySeries,
+        int chartX,
+        int chartY,
+        int chartWidth,
+        int chartHeight,
+        int axisMax)
     {
-        double bottom = chartY + chartHeight;
-        var sb = new StringBuilder();
-        sb.Append($"M {chartX} {FormatNumber(bottom)} ");
-
-        for (int i = 0; i < points.Count; i++)
+        var points = new List<(double X, double Y)>(monthlySeries.Count);
+        for (int i = 0; i < monthlySeries.Count; i++)
         {
-            double x = chartX + (chartWidth * i / (double)Math.Max(1, points.Count - 1));
-            double y = ToChartY(points[i], chartY, chartHeight, axisMax);
-            sb.Append($"L {FormatNumber(x)} {FormatNumber(y)} ");
+            double x = chartX + (chartWidth * i / (double)Math.Max(1, monthlySeries.Count - 1));
+            double y = ToChartY(monthlySeries[i].Count, chartY, chartHeight, axisMax);
+            points.Add((x, y));
         }
 
-        sb.Append($"L {chartX + chartWidth} {FormatNumber(bottom)} Z");
-        return sb.ToString();
+        return points;
     }
 
-    private static string BuildLinePath(IReadOnlyList<int> points, int chartX, int chartY, int chartWidth, int chartHeight, int axisMax)
+    private static string BuildSmoothLinePath(IReadOnlyList<(double X, double Y)> points)
     {
-        var sb = new StringBuilder();
-        for (int i = 0; i < points.Count; i++)
+        if (points.Count == 0)
         {
-            double x = chartX + (chartWidth * i / (double)Math.Max(1, points.Count - 1));
-            double y = ToChartY(points[i], chartY, chartHeight, axisMax);
-            string command = i == 0 ? "M" : "L";
-            sb.Append($"{command} {FormatNumber(x)} {FormatNumber(y)} ");
+            return string.Empty;
+        }
+
+        if (points.Count == 1)
+        {
+            return $"M {FormatNumber(points[0].X)} {FormatNumber(points[0].Y)}";
+        }
+
+        var sb = new StringBuilder();
+        sb.Append($"M {FormatNumber(points[0].X)} {FormatNumber(points[0].Y)} ");
+
+        for (int i = 0; i < points.Count - 1; i++)
+        {
+            (double X, double Y) p0 = i == 0 ? points[i] : points[i - 1];
+            (double X, double Y) p1 = points[i];
+            (double X, double Y) p2 = points[i + 1];
+            (double X, double Y) p3 = i + 2 < points.Count ? points[i + 2] : p2;
+
+            double c1x = p1.X + (p2.X - p0.X) / 6.0;
+            double c1y = p1.Y + (p2.Y - p0.Y) / 6.0;
+            double c2x = p2.X - (p3.X - p1.X) / 6.0;
+            double c2y = p2.Y - (p3.Y - p1.Y) / 6.0;
+
+            sb.Append($"C {FormatNumber(c1x)} {FormatNumber(c1y)} {FormatNumber(c2x)} {FormatNumber(c2y)} {FormatNumber(p2.X)} {FormatNumber(p2.Y)} ");
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    private static string BuildSmoothAreaPath(IReadOnlyList<(double X, double Y)> points, double baselineY)
+    {
+        if (points.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (points.Count == 1)
+        {
+            return $"M {FormatNumber(points[0].X)} {FormatNumber(baselineY)} L {FormatNumber(points[0].X)} {FormatNumber(points[0].Y)} L {FormatNumber(points[0].X)} {FormatNumber(baselineY)} Z";
+        }
+
+        var sb = new StringBuilder();
+        sb.Append($"M {FormatNumber(points[0].X)} {FormatNumber(baselineY)} ");
+        sb.Append($"L {FormatNumber(points[0].X)} {FormatNumber(points[0].Y)} ");
+
+        for (int i = 0; i < points.Count - 1; i++)
+        {
+            (double X, double Y) p0 = i == 0 ? points[i] : points[i - 1];
+            (double X, double Y) p1 = points[i];
+            (double X, double Y) p2 = points[i + 1];
+            (double X, double Y) p3 = i + 2 < points.Count ? points[i + 2] : p2;
+
+            double c1x = p1.X + (p2.X - p0.X) / 6.0;
+            double c1y = p1.Y + (p2.Y - p0.Y) / 6.0;
+            double c2x = p2.X - (p3.X - p1.X) / 6.0;
+            double c2y = p2.Y - (p3.Y - p1.Y) / 6.0;
+
+            sb.Append($"C {FormatNumber(c1x)} {FormatNumber(c1y)} {FormatNumber(c2x)} {FormatNumber(c2y)} {FormatNumber(p2.X)} {FormatNumber(p2.Y)} ");
+        }
+
+        sb.Append($"L {FormatNumber(points[^1].X)} {FormatNumber(baselineY)} Z");
+        return sb.ToString();
     }
 
     private static double ToChartY(int value, int chartY, int chartHeight, int axisMax)
     {
         double ratio = axisMax <= 0 ? 0 : Math.Clamp(value / (double)axisMax, 0, 1);
         return chartY + chartHeight - (chartHeight * ratio);
-    }
-
-    private static IReadOnlyList<(int Index, DateOnly Date)> BuildXAxisTicks(int count, DateOnly startDate)
-    {
-        var result = new List<(int Index, DateOnly Date)>();
-        const int ticks = 6;
-
-        for (int i = 0; i < ticks; i++)
-        {
-            int index = (int)Math.Round((count - 1) * (i / (double)(ticks - 1)), MidpointRounding.AwayFromZero);
-            if (result.Any(x => x.Index == index))
-            {
-                continue;
-            }
-
-            result.Add((index, startDate.AddDays(index)));
-        }
-
-        return result;
     }
 
     private static int CalculateJoinedYears(DateTime joinedDate, DateTime referenceDate)
@@ -207,4 +245,6 @@ internal static class ProfileStatsCardRenderer
     {
         return value.ToString("0.##", CultureInfo.InvariantCulture);
     }
+
+    private sealed record MonthlyContributionPoint(DateOnly Month, int Count);
 }

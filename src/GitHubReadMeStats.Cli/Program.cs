@@ -119,6 +119,7 @@ internal static class Program
         TrafficHistoryStore trafficHistory = TrafficHistoryStore.Load(trafficHistoryPath);
 
         int generatedPinCount = 0;
+        int unavailableTrafficCount = 0;
         foreach (PinRepository repo in config.Repositories)
         {
             PinCardData baseData = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
@@ -161,6 +162,14 @@ internal static class Program
             }
 
             RepositoryTrafficTotals? trafficTotals = trafficHistory.MergeAndGetTotals(repo.Owner, repo.Name, trafficSnapshot);
+            if (trafficSnapshot is null && trafficTotals is null)
+            {
+                unavailableTrafficCount++;
+                Console.WriteLine(
+                    $"Info: traffic unavailable for {repo.Owner}/{repo.Name}. " +
+                    "Check GH_TOKEN repository access and 'Administration: Read' permission.");
+            }
+
             PinCardData data = baseData with
             {
                 TrafficTotals = trafficTotals,
@@ -174,6 +183,11 @@ internal static class Program
 
         await trafficHistory.SaveAsync(trafficHistoryPath);
         Console.WriteLine($"Updated traffic history: {trafficHistoryPath}");
+        if (unavailableTrafficCount > 0)
+        {
+            Console.WriteLine($"Traffic unavailable repositories: {unavailableTrafficCount}");
+        }
+
         Console.WriteLine($"Generated pin cards: {generatedPinCount}");
     }
 

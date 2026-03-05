@@ -58,6 +58,9 @@ internal sealed class UserNode
     [JsonPropertyName("repositories")]
     public TotalCountNode? Repositories { get; init; }
 
+    [JsonPropertyName("privateRepositories")]
+    public TotalCountNode? PrivateRepositories { get; init; }
+
     [JsonPropertyName("contributionsCollection")]
     public ContributionsCollectionNode? ContributionsCollection { get; init; }
 }
@@ -190,6 +193,7 @@ internal sealed record UserSummary(
     string? Location,
     int Followers,
     int PublicRepositories,
+    int PrivateRepositories,
     int ContributionsThisYear,
     DateTimeOffset CreatedAt,
     IReadOnlyList<ContributionDaySummary> ContributionDays);

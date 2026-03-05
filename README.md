@@ -29,6 +29,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - Classic PAT: `repo` を付与すると private repo を含めて扱いやすいです。
 - Fine-grained PAT: 実行対象ユーザーの必要なリポジトリに `Contents: Read` を付与してください。
 - リポジトリ card に traffic 指標を表示する場合、Fine-grained PAT では `Administration: Read` も必要です（GitHub Traffic API 要件）。
+- traffic 指標を表示したいリポジトリは、Fine-grained PAT の `Repository access` に含めてください（`cards-config.json` の対象 repo すべて）。
 - private repo を集計/カード化する場合は、その private repo への参照権限が必要です。
 
 ## 事前準備

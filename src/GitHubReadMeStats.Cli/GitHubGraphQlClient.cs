@@ -128,6 +128,9 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
     repositories(ownerAffiliations: OWNER, isFork: false, privacy: PUBLIC) {
       totalCount
     }
+    privateRepositories: repositories(ownerAffiliations: OWNER, isFork: false, privacy: PRIVATE) {
+      totalCount
+    }
     contributionsCollection(from: $from, to: $to) {
       contributionCalendar {
         totalContributions
@@ -143,8 +146,9 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 }
 """;
 
-        DateTimeOffset from = new(DateTimeOffset.UtcNow.Year, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        DateTimeOffset to = DateTimeOffset.UtcNow;
+        DateTimeOffset nowUtc = DateTimeOffset.UtcNow;
+        DateTimeOffset from = nowUtc.AddYears(-1);
+        DateTimeOffset to = nowUtc;
 
         GraphQlResponse<UserLookupData> response = await ExecuteGraphQlAsync<UserLookupData>(
             query,
@@ -160,6 +164,9 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             ?? throw new InvalidOperationException($"User not found: {username}");
 
         List<ContributionDaySummary> contributionDays = ExtractContributionDays(user);
+        int contributionsThisYear = contributionDays
+            .Where(x => x.Date.Year == nowUtc.Year)
+            .Sum(x => x.ContributionCount);
 
         return new UserSummary(
             user.Login ?? username,
@@ -167,7 +174,8 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             user.Location,
             user.Followers?.TotalCount ?? 0,
             user.Repositories?.TotalCount ?? 0,
-            user.ContributionsCollection?.ContributionCalendar?.TotalContributions ?? 0,
+            user.PrivateRepositories?.TotalCount ?? 0,
+            contributionsThisYear,
             user.CreatedAt,
             contributionDays);
     }
