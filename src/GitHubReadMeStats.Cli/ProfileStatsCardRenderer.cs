@@ -38,7 +38,7 @@ internal static class ProfileStatsCardRenderer
         sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#16F2D1\" stop-opacity=\"0.05\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
-        sb.AppendLine("      .title { font: 700 26px 'Segoe UI', Arial, sans-serif; fill: #F43F98; }");
+        sb.AppendLine("      .title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #F43F98; }");
         sb.AppendLine("      .login { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
         sb.AppendLine("      .value { font: 700 11px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
         sb.AppendLine("      .axis { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #38BDF8; }");

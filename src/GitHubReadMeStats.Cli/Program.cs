@@ -120,6 +120,12 @@ internal static class Program
         string configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Directory.GetCurrentDirectory();
 
         UserSummary summary = await graphqlClient.FetchUserSummaryAsync(config.Username);
+        string githubStatsSvg = GitHubStatsSummaryCardRenderer.Render(summary);
+        string githubStatsPath = Path.Combine(options.CardsOutputDir, "github-stats.svg");
+        EnsureParentDirectory(githubStatsPath);
+        await File.WriteAllTextAsync(githubStatsPath, githubStatsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        Console.WriteLine($"Generated: {githubStatsPath}");
+
         string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc, timeDisplay);
         string statsPath = Path.Combine(options.CardsOutputDir, "stats.svg");
         EnsureParentDirectory(statsPath);

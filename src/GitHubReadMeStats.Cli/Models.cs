@@ -38,6 +38,18 @@ internal sealed class UserLookupData
     public UserNode? User { get; init; }
 }
 
+internal sealed class UserStarsLookupData
+{
+    [JsonPropertyName("user")]
+    public UserStarsNode? User { get; init; }
+}
+
+internal sealed class UserStarsNode
+{
+    [JsonPropertyName("repositories")]
+    public RepositoryConnection? Repositories { get; init; }
+}
+
 internal sealed class UserNode
 {
     [JsonPropertyName("login")]
@@ -73,6 +85,18 @@ internal sealed class TotalCountNode
 
 internal sealed class ContributionsCollectionNode
 {
+    [JsonPropertyName("totalCommitContributions")]
+    public int TotalCommitContributions { get; init; }
+
+    [JsonPropertyName("totalIssueContributions")]
+    public int TotalIssueContributions { get; init; }
+
+    [JsonPropertyName("totalPullRequestContributions")]
+    public int TotalPullRequestContributions { get; init; }
+
+    [JsonPropertyName("totalRepositoriesWithContributedCommits")]
+    public int TotalRepositoriesWithContributedCommits { get; init; }
+
     [JsonPropertyName("contributionCalendar")]
     public ContributionCalendarNode? ContributionCalendar { get; init; }
 }
@@ -194,6 +218,11 @@ internal sealed record UserSummary(
     int Followers,
     int PublicRepositories,
     int PrivateRepositories,
+    int TotalStarsEarned,
+    int TotalCommitsLastYear,
+    int TotalPullRequestsLastYear,
+    int TotalIssuesLastYear,
+    int ContributedToRepositoriesLastYear,
     int ContributionsThisYear,
     DateTimeOffset CreatedAt,
     IReadOnlyList<ContributionDaySummary> ContributionDays);

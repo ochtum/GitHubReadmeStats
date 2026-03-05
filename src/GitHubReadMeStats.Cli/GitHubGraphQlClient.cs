@@ -132,6 +132,10 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
       totalCount
     }
     contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalIssueContributions
+      totalPullRequestContributions
+      totalRepositoriesWithContributedCommits
       contributionCalendar {
         totalContributions
         weeks {
@@ -163,6 +167,12 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
         UserNode user = response.Data?.User
             ?? throw new InvalidOperationException($"User not found: {username}");
 
+        int totalStarsEarned = await FetchTotalStarsEarnedAsync(user.Login ?? username, cancellationToken);
+        int totalCommitsLastYear = Math.Max(0, user.ContributionsCollection?.TotalCommitContributions ?? 0);
+        int totalPullRequestsLastYear = Math.Max(0, user.ContributionsCollection?.TotalPullRequestContributions ?? 0);
+        int totalIssuesLastYear = Math.Max(0, user.ContributionsCollection?.TotalIssueContributions ?? 0);
+        int contributedToRepositoriesLastYear = Math.Max(0, user.ContributionsCollection?.TotalRepositoriesWithContributedCommits ?? 0);
+
         List<ContributionDaySummary> contributionDays = ExtractContributionDays(user);
         int contributionsThisYear = contributionDays
             .Where(x => x.Date.Year == nowUtc.Year)
@@ -175,9 +185,77 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             user.Followers?.TotalCount ?? 0,
             user.Repositories?.TotalCount ?? 0,
             user.PrivateRepositories?.TotalCount ?? 0,
+            totalStarsEarned,
+            totalCommitsLastYear,
+            totalPullRequestsLastYear,
+            totalIssuesLastYear,
+            contributedToRepositoriesLastYear,
             contributionsThisYear,
             user.CreatedAt,
             contributionDays);
+    }
+
+    private async Task<int> FetchTotalStarsEarnedAsync(string username, CancellationToken cancellationToken)
+    {
+        const string query = """
+query($login: String!, $first: Int!, $after: String) {
+  user(login: $login) {
+    repositories(
+      first: $first
+      after: $after
+      ownerAffiliations: OWNER
+      isFork: false
+      orderBy: { field: UPDATED_AT, direction: DESC }
+    ) {
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        stargazerCount
+      }
+    }
+  }
+}
+""";
+
+        int totalStars = 0;
+        string? afterCursor = null;
+
+        while (true)
+        {
+            GraphQlResponse<UserStarsLookupData> response = await ExecuteGraphQlAsync<UserStarsLookupData>(
+                query,
+                new
+                {
+                    login = username,
+                    first = 100,
+                    after = afterCursor,
+                },
+                cancellationToken);
+
+            RepositoryConnection repositories = response.Data?.User?.Repositories
+                ?? throw new InvalidOperationException($"Unable to fetch repositories for user: {username}");
+
+            if (repositories.Nodes is { Count: > 0 })
+            {
+                foreach (RepositoryNode? node in repositories.Nodes)
+                {
+                    totalStars += Math.Max(0, node?.StargazerCount ?? 0);
+                }
+            }
+
+            bool hasNextPage = repositories.PageInfo?.HasNextPage == true;
+            string? endCursor = repositories.PageInfo?.EndCursor;
+            if (!hasNextPage || string.IsNullOrWhiteSpace(endCursor))
+            {
+                break;
+            }
+
+            afterCursor = endCursor;
+        }
+
+        return totalStars;
     }
 
     public async Task<PinCardData> FetchRepositoryCardDataAsync(string owner, string name, CancellationToken cancellationToken = default)

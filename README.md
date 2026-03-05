@@ -1,7 +1,7 @@
 # GitHubReadMeStats (.NET 10 / C#)
 
 GitHub GraphQL API を使って、プロフィール README 向けの SVG を自前生成する CLI です。  
-`top-languages.svg` に加えて、`stats.svg` と `pins/*.svg` も出力できます。
+`top-languages.svg` に加えて、`github-stats.svg`、`stats.svg`、`pins/*.svg` も出力できます。
 
 ## このリポジトリの役割
 
@@ -13,6 +13,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - C# / .NET 10 (`net10.0`)
 - GitHub GraphQL API から `viewer.repositories(ownerAffiliations: OWNER)` をページング取得
 - 言語集計カード: `top-languages.svg`
+- GitHub Stats サマリーカード: `github-stats.svg`
 - プロフィールサマリーカード: `stats.svg`
 - リポジトリカード: `pins/<owner>-<repo>.svg`
 - `cards-config.json` で言語色の上書き (`HEX`, `OKLCH` など) と、リポジトリごとのアイコン指定が可能
@@ -71,7 +72,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 
 ## cards-config.json
 
-`--cards-config` を指定すると `stats.svg` と `pins/*.svg` が生成されます。
+`--cards-config` を指定すると `github-stats.svg`、`stats.svg`、`pins/*.svg` が生成されます。
 
 ```json
 {
@@ -185,7 +186,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md cards-config.json output/top-languages.svg output/stats.svg output/traffic-history.json output/pins/*.svg
+          git add README.md cards-config.json output/top-languages.svg output/github-stats.svg output/stats.svg output/traffic-history.json output/pins/*.svg
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
@@ -227,6 +228,8 @@ jobs:
 </p>
 
 ## GitHub Stats
+![GitHub stats summary](./output/github-stats.svg)
+
 ![GitHub stats](./output/stats.svg)
 
 ## My Projects
