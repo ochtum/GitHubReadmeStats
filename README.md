@@ -1,31 +1,74 @@
+<p align="left">
+  <a href="README_en.md"><img src="https://img.shields.io/badge/English Mode-blue.svg" alt="English"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/日本語 モード-red.svg" alt="日本語"></a>
+</p>
+
 # GitHubReadMeStats (.NET 10 / C#)
 
 GitHub GraphQL API を使って、プロフィール README 向けの SVG を自前生成する CLI です。  
-`top-languages.svg` に加えて、`github-stats.svg`、`stats.svg`、`pins/*.svg` も出力できます。
+`top-languages.svg` に加えて、`github-stats.svg`、`stats.svg`、`public-repo-totals.svg`、`pins/*.svg` も出力できます。
 
 ## このリポジトリの役割
 
-このリポジトリは「生成ツール」です。  
+このリポジトリは「README用SVG生成ツール」です。  
 実運用では、各ユーザーのプロフィールリポジトリ（`<user>/<user>`）側の GitHub Actions から本ツールを呼び出す構成を推奨します。
 
-## Features
+### できること一覧
+
+- 所有リポジトリの言語使用割合を集計し、`top-languages.svg` を生成
+- Stars/Commits/PRs/Issues/Rankを集計し、`github-stats.svg`を生成
+- Contributions推移 + Public/Private/Forked repo数を集計し、`stats.svg`を生成
+- Public repoのTraffic/Fork/Watch/Starを集計し、`public-repo-totals.svg`を生成
+- 指定リポジトリの個別カード、`pins/<owner>-<repo>.svg`を生成
+- `cards-config.json` で言語色・言語アイコン・リポジトリアイコンを設定できます。
+- 各PublicリポジトリのTraffic 日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
+- README の指定セクションを自動更新可能（`--update-readme`）
+
+### Tech Stack
 
 - C# / .NET 10 (`net10.0`)
-- GitHub GraphQL API から `viewer.repositories(ownerAffiliations: OWNER)` をページング取得
-- 言語集計カード: `top-languages.svg`
-- GitHub Stats サマリーカード: `github-stats.svg`
-- プロフィールサマリーカード: `stats.svg`
-- リポジトリカード: `pins/<owner>-<repo>.svg`
-- `cards-config.json` で言語色の上書き (`HEX`, `OKLCH` など) と、リポジトリごとのアイコン指定が可能
-- リポジトリカードに traffic 指標 (`Git Clones`, `Unique cloners`, `Total views`, `Unique visitors`) を表示
-- README セクション自動更新 (`--update-readme`)
+- GitHub GraphQL API + GitHub REST API（Traffic）
 
-## Requirements
+### 出力される SVG の説明
+
+- `top-languages.svg`: ユーザーが所有するリポジトリを対象に、言語使用割合を上位 N 件で可視化するカードです。
+- `github-stats.svg`: Stars / Commits(last year) / PRs / Issues / Contributed repositories とランクを表示する総合サマリーカードです。
+- `stats.svg`: Contributions 推移グラフと、Public/Private/Forked リポジトリ数などのプロフィール統計を表示するカードです。
+- `public-repo-totals.svg`: Publicリポジトリを対象に、Traffic 合計（Git Clones / Unique Cloners / Total Views / Unique Visitors）と Fork/Watch/Starred 合計を表示するカードです。
+- `pins/*.svg`: `cards-config.json` の `repositories` で指定した各リポジトリの個別カードです。説明文、言語、スター/フォーク、Traffic（取得可能な場合）を表示します。
+
+### SVGサンプル
+
+以下は実際の出力例です（`ochtum/ochtum` の `output` を参照）。
+
+#### `top-languages.svg`
+
+![top-languages sample](https://raw.githubusercontent.com/ochtum/ochtum/main/output/top-languages.svg)
+
+#### `github-stats.svg` / `stats.svg`
+
+<div align="center">
+  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/github-stats.svg" alt="github-stats sample" />
+  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/stats.svg" alt="stats sample" />
+</div>
+
+#### `public-repo-totals.svg`
+
+![public-repo-totals sample](https://raw.githubusercontent.com/ochtum/ochtum/main/output/public-repo-totals.svg)
+
+#### `pins/*.svg`
+
+<div align="center">
+  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/pins/ochtum-CaptureScreenMCP.svg" alt="pin sample 1" />
+  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/pins/microsoft-vscode-generator-code.svg" alt="pin sample 2" />
+</div>
+
+### Requirements
 
 - .NET SDK 10
 - GitHub Personal Access Token (`GH_TOKEN` または `GITHUB_TOKEN` 環境変数)
 
-## Token 権限の目安
+### Token 権限の目安
 
 - Classic PAT: `repo` を付与すると private repo を含めて扱いやすいです。
 - Fine-grained PAT: 実行対象ユーザーの必要なリポジトリに `Contents: Read` を付与してください。
@@ -70,7 +113,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
   --cards-output-dir output
 ```
 
-## cards-config.json
+### cards-config.json
 
 `--cards-config` を指定すると `github-stats.svg`、`stats.svg`、`public-repo-totals.svg`、`pins/*.svg` が生成されます。
 
@@ -116,7 +159,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `displayTimeZone`: `updated` 表示時刻のタイムゾーン（未指定時は `UTC`）
 - `displayTimeZoneLabel`: 表示ラベル（例: `JST`。未指定時は `UTC` / `UTC+09:00` / `Asia/Tokyo` などを自動決定）
 
-## CLI Options
+### CLI Options
 
 - `--github-token`, `-t`: GitHub token
 - `--output`, `-o`: 言語カード SVG の出力先 (default: `output/top-languages.svg`)
@@ -221,6 +264,7 @@ jobs:
 
 ```md
 ## Weekly Update
+
 <p align="center">
   <a href="https://github.com/ochtum/GitHubReadmeStats">
     <img src="./output/top-languages.svg" alt="Top Languages" height="250" />
@@ -228,6 +272,7 @@ jobs:
 </p>
 
 ## GitHub Stats
+
 ![GitHub stats summary](./output/github-stats.svg)
 
 ![GitHub stats](./output/stats.svg)
@@ -235,6 +280,7 @@ jobs:
 ![Public repository totals](./output/public-repo-totals.svg)
 
 ## My Projects
+
 <a href="https://github.com/your-github-id/your-repo-1">
   <img align="center" src="./output/pins/your-github-id-your-repo-1.svg" />
 </a>
@@ -247,11 +293,6 @@ jobs:
 例: `microsoft/vscode-generator-code` -> `./output/pins/microsoft-vscode-generator-code.svg`
 
 Traffic累積を維持するには、workflow の commit 対象に `output/traffic-history.json` を含めてください。
-
-## このリポジトリの Actions について
-
-このリポジトリには自己更新用の workflow (`.github/workflows/update-readme-stats.yml`) がありますが、利用者に必須ではありません。  
-公開ツールとして使うだけなら、利用者側プロフィールリポジトリの workflow だけで運用できます。
 
 ## 制約
 
@@ -289,3 +330,7 @@ on:
 - https://zenn.dev/chot/articles/30b08c452795eb
 - https://github.com/4okimi7uki/repo-spector
 
+## ライセンス
+
+- このプロジェクトは [MIT License](./LICENSE) の下で提供されています。
+- 参考元・再利用コードに関する第三者ライセンス表記は [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) を参照してください。
