@@ -88,6 +88,9 @@ internal sealed class UserNode
     [JsonPropertyName("reviews")]
     public ReviewContributionsNode? Reviews { get; init; }
 
+    [JsonPropertyName("commits")]
+    public CommitContributionsNode? Commits { get; init; }
+
     [JsonPropertyName("contributionsCollection")]
     public ContributionsCollectionNode? ContributionsCollection { get; init; }
 }
@@ -123,6 +126,12 @@ internal sealed class ReviewContributionsNode
 {
     [JsonPropertyName("totalPullRequestReviewContributions")]
     public int TotalPullRequestReviewContributions { get; init; }
+}
+
+internal sealed class CommitContributionsNode
+{
+    [JsonPropertyName("totalCommitContributions")]
+    public int TotalCommitContributions { get; init; }
 }
 
 internal sealed class ContributionCalendarNode
@@ -305,12 +314,6 @@ internal sealed class RestTrafficResponse
 
     [JsonPropertyName("views")]
     public List<RestTrafficPoint>? Views { get; init; }
-}
-
-internal sealed class RestSearchTotalCountResponse
-{
-    [JsonPropertyName("total_count")]
-    public int TotalCount { get; init; }
 }
 
 internal sealed class RestTrafficPoint

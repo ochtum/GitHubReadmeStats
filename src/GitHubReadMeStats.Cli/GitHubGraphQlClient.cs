@@ -146,6 +146,9 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
     reviews: contributionsCollection {
       totalPullRequestReviewContributions
     }
+    commits: contributionsCollection {
+      totalCommitContributions
+    }
     contributionsCollection(from: $from, to: $to) {
       totalCommitContributions
       contributionCalendar {
@@ -180,8 +183,7 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
             ?? throw new InvalidOperationException($"User not found: {username}");
 
         int totalStarsEarned = await FetchTotalStarsEarnedAsync(user.Login ?? username, cancellationToken);
-        int recentCommits = Math.Max(0, user.ContributionsCollection?.TotalCommitContributions ?? 0);
-        int totalCommitsLastYear = await TryFetchTotalCommitsAsync(user.Login ?? username, cancellationToken) ?? recentCommits;
+        int totalCommitsLastYear = Math.Max(0, user.Commits?.TotalCommitContributions ?? 0);
         int totalPullRequestsLastYear = Math.Max(0, user.PullRequests?.TotalCount ?? 0);
         int totalIssuesLastYear = Math.Max(0, (user.OpenIssues?.TotalCount ?? 0) + (user.ClosedIssues?.TotalCount ?? 0));
         int totalReviewsLastYear = Math.Max(0, user.Reviews?.TotalPullRequestReviewContributions ?? 0);
@@ -270,33 +272,6 @@ query($login: String!, $first: Int!, $after: String) {
         }
 
         return totalStars;
-    }
-
-    private async Task<int?> TryFetchTotalCommitsAsync(string username, CancellationToken cancellationToken)
-    {
-        string encodedQuery = Uri.EscapeDataString($"author:{username}");
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(RestApiEndpoint, $"/search/commits?q={encodedQuery}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", _token);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.cloak-preview+json"));
-        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("GitHubReadMeStats", CliParser.ApplicationVersion));
-
-        using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
-        string body = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound or HttpStatusCode.Unauthorized)
-            {
-                return null;
-            }
-
-            string snippet = body.Length > 500 ? body[..500] + "..." : body;
-            throw new InvalidOperationException(
-                $"GitHub REST request failed: {(int)response.StatusCode} {response.ReasonPhrase}. {snippet}");
-        }
-
-        RestSearchTotalCountResponse? payload = JsonSerializer.Deserialize<RestSearchTotalCountResponse>(body, JsonOptions);
-        return payload is null ? null : Math.Max(0, payload.TotalCount);
     }
 
     public async Task<PinCardData> FetchRepositoryCardDataAsync(string owner, string name, CancellationToken cancellationToken = default)

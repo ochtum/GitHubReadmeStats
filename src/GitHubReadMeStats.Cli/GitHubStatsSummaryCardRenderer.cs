@@ -16,7 +16,11 @@ internal static class GitHubStatsSummaryCardRenderer
         DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
 
         Rank rank = CalculateRank(summary);
-        string title = $"{summary.Login}'s GitHub Stats";
+        string titleOwner = string.IsNullOrWhiteSpace(summary.DisplayName)
+            ? summary.Login
+            : summary.DisplayName.Trim();
+        string titleSuffix = titleOwner.EndsWith("s", StringComparison.OrdinalIgnoreCase) ? "'" : "'s";
+        string title = $"{titleOwner}{titleSuffix} GitHub Stats";
 
         var sb = new StringBuilder();
         sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub stats summary for {EscapeXml(summary.Login)}\">");
@@ -42,7 +46,7 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine($"  <text x=\"24\" y=\"36\" class=\"title\">{EscapeXml(title)}</text>");
 
         AppendMetricRow(sb, 24, 63, "☆", "Total Stars Earned:", summary.TotalStarsEarned);
-        AppendMetricRow(sb, 24, 91, "◔", "Total Commits:", summary.TotalCommitsLastYear);
+        AppendMetricRow(sb, 24, 91, "◔", "Total Commits (last year):", summary.TotalCommitsLastYear);
         AppendMetricRow(sb, 24, 119, "⑂", "Total PRs:", summary.TotalPullRequestsLastYear);
         AppendMetricRow(sb, 24, 147, "◍", "Total Issues:", summary.TotalIssuesLastYear);
         AppendMetricRow(sb, 24, 175, "▣", "Contributed to (last year):", summary.ContributedToRepositoriesLastYear);
