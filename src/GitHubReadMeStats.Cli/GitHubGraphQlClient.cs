@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -7,6 +8,7 @@ namespace GitHubReadMeStats.Cli;
 internal sealed class GitHubGraphQlClient
 {
     private static readonly Uri GraphQlEndpoint = new("https://api.github.com/graphql", UriKind.Absolute);
+    private static readonly Uri RestApiEndpoint = new("https://api.github.com", UriKind.Absolute);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -204,7 +206,52 @@ query($owner: String!, $name: String!) {
             language,
             languageColor,
             repository.IsPrivate,
-            repository.IsArchived);
+            repository.IsArchived,
+            null);
+    }
+
+    public async Task<RepositoryTrafficSnapshot?> TryFetchRepositoryTrafficAsync(string owner, string name, CancellationToken cancellationToken = default)
+    {
+        string encodedOwner = Uri.EscapeDataString(owner);
+        string encodedName = Uri.EscapeDataString(name);
+
+        RestTrafficResponse? cloneResponse = await ExecuteRestAsync<RestTrafficResponse>(
+            $"/repos/{encodedOwner}/{encodedName}/traffic/clones",
+            allowInaccessibleRepository: true,
+            cancellationToken);
+
+        if (cloneResponse is null)
+        {
+            return null;
+        }
+
+        RestTrafficResponse? viewResponse = await ExecuteRestAsync<RestTrafficResponse>(
+            $"/repos/{encodedOwner}/{encodedName}/traffic/views",
+            allowInaccessibleRepository: true,
+            cancellationToken);
+
+        if (viewResponse is null)
+        {
+            return null;
+        }
+
+        List<TrafficDayPoint> cloneDays = (cloneResponse.Clones ?? new List<RestTrafficPoint>())
+            .Select(MapTrafficDayPoint)
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        List<TrafficDayPoint> viewDays = (viewResponse.Views ?? new List<RestTrafficPoint>())
+            .Select(MapTrafficDayPoint)
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        return new RepositoryTrafficSnapshot(
+            cloneResponse.Count,
+            cloneResponse.Uniques,
+            viewResponse.Count,
+            viewResponse.Uniques,
+            cloneDays,
+            viewDays);
     }
 
     private async Task<GraphQlResponse<TData>> ExecuteGraphQlAsync<TData>(string query, object variables, CancellationToken cancellationToken)
@@ -255,6 +302,48 @@ query($owner: String!, $name: String!) {
         }
 
         return body;
+    }
+
+    private async Task<T?> ExecuteRestAsync<T>(string relativePath, bool allowInaccessibleRepository, CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(RestApiEndpoint, relativePath));
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", _token);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        request.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("GitHubReadMeStats", CliParser.ApplicationVersion));
+
+        using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+        string body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            if (allowInaccessibleRepository &&
+                response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.NotFound or HttpStatusCode.Unauthorized)
+            {
+                return default;
+            }
+
+            string snippet = body.Length > 500 ? body[..500] + "..." : body;
+            throw new InvalidOperationException(
+                $"GitHub REST request failed: {(int)response.StatusCode} {response.ReasonPhrase}. {snippet}");
+        }
+
+        T? payload = JsonSerializer.Deserialize<T>(body, JsonOptions);
+        if (payload is null)
+        {
+            throw new InvalidOperationException("GitHub REST returned an empty response.");
+        }
+
+        return payload;
+    }
+
+    private static TrafficDayPoint MapTrafficDayPoint(RestTrafficPoint point)
+    {
+        DateOnly date = DateOnly.FromDateTime(point.Timestamp.UtcDateTime);
+        return new TrafficDayPoint(
+            date,
+            Math.Max(0, point.Count),
+            Math.Max(0, point.Uniques));
     }
 
     private static string NormalizeColor(string? color)

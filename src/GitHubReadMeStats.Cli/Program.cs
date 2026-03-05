@@ -113,16 +113,38 @@ internal static class Program
         string pinOutputDir = Path.Combine(options.CardsOutputDir, "pins");
         Directory.CreateDirectory(pinOutputDir);
 
+        string trafficHistoryPath = Path.Combine(options.CardsOutputDir, "traffic-history.json");
+        TrafficHistoryStore trafficHistory = TrafficHistoryStore.Load(trafficHistoryPath);
+
         int generatedPinCount = 0;
         foreach (PinRepository repo in config.Repositories)
         {
-            PinCardData data = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
+            PinCardData baseData = await graphqlClient.FetchRepositoryCardDataAsync(repo.Owner, repo.Name);
+
+            RepositoryTrafficSnapshot? trafficSnapshot = null;
+            try
+            {
+                trafficSnapshot = await graphqlClient.TryFetchRepositoryTrafficAsync(repo.Owner, repo.Name);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: failed to fetch traffic for {repo.Owner}/{repo.Name}: {ex.Message}");
+            }
+
+            RepositoryTrafficTotals? trafficTotals = trafficHistory.MergeAndGetTotals(repo.Owner, repo.Name, trafficSnapshot);
+            PinCardData data = baseData with
+            {
+                TrafficTotals = trafficTotals,
+            };
+
             string pinSvg = PinCardRenderer.Render(data);
             string pinPath = Path.Combine(pinOutputDir, $"{SanitizePathSegment(repo.Owner)}-{SanitizePathSegment(repo.Name)}.svg");
             await File.WriteAllTextAsync(pinPath, pinSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             generatedPinCount++;
         }
 
+        await trafficHistory.SaveAsync(trafficHistoryPath);
+        Console.WriteLine($"Updated traffic history: {trafficHistoryPath}");
         Console.WriteLine($"Generated pin cards: {generatedPinCount}");
     }
 

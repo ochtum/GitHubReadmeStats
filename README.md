@@ -15,6 +15,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - 言語集計カード: `top-languages.svg`
 - プロフィールサマリーカード: `stats.svg`
 - リポジトリカード: `pins/<owner>-<repo>.svg`
+- リポジトリカードに traffic 指標 (`Git Clones`, `Unique cloners`, `Total views`, `Unique visitors`) を表示
 - README セクション自動更新 (`--update-readme`)
 
 ## Requirements
@@ -26,6 +27,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 - Classic PAT: `repo` を付与すると private repo を含めて扱いやすいです。
 - Fine-grained PAT: 実行対象ユーザーの必要なリポジトリに `Contents: Read` を付与してください。
+- リポジトリ card に traffic 指標を表示する場合、Fine-grained PAT では `Administration: Read` も必要です（GitHub Traffic API 要件）。
 - private repo を集計/カード化する場合は、その private repo への参照権限が必要です。
 
 ## 事前準備
@@ -37,6 +39,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - GitHub 右上アイコン -> `Settings` -> `Developer settings` -> `Personal access tokens` を開く
 - `Tokens (classic)` なら `Generate new token (classic)` で発行し、`repo` スコープを付与
 - `Fine-grained tokens` を使う場合は、対象リポジトリに `Contents: Read` を付与
+- traffic 指標を使う場合は、同じく `Administration: Read` も付与
 - 発行後、表示されるトークン文字列を控える（再表示できません）
 
 2. プロフィールリポジトリ (`<user>/<user>`) に Secrets を設定
@@ -150,7 +153,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md cards-config.json output/top-languages.svg output/stats.svg output/pins/*.svg
+          git add README.md cards-config.json output/top-languages.svg output/stats.svg output/traffic-history.json output/pins/*.svg
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
@@ -206,6 +209,8 @@ jobs:
 `pins` のファイル名は `owner-repo.svg` 形式です。  
 例: `microsoft/vscode-generator-code` -> `./output/pins/microsoft-vscode-generator-code.svg`
 
+Traffic累積を維持するには、workflow の commit 対象に `output/traffic-history.json` を含めてください。
+
 ## このリポジトリの Actions について
 
 このリポジトリには自己更新用の workflow (`.github/workflows/update-readme-stats.yml`) がありますが、利用者に必須ではありません。  
@@ -216,6 +221,8 @@ jobs:
 - `top-languages` 集計対象は、実行トークンの `viewer` が所有するリポジトリです。
 - `pins` は `cards-config.json` で指定した `owner/repo` を個別取得します。
 - アクセス権のない private repo は取得できません。
+- Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json` に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
+- `Unique cloners/visitors` の全期間ユニーク人数を厳密に復元するAPIはないため、累積表示は「日次 uniques の合算」です。
 
 ## 定期実行したい場合
 

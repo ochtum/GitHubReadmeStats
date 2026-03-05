@@ -183,7 +183,8 @@ internal sealed record PinCardData(
     string PrimaryLanguage,
     string PrimaryLanguageColor,
     bool IsPrivate,
-    bool IsArchived);
+    bool IsArchived,
+    RepositoryTrafficTotals? TrafficTotals);
 
 internal sealed record CardsConfig(string Username, IReadOnlyList<PinRepository> Repositories);
 
@@ -192,3 +193,76 @@ internal sealed record AggregationResult(
     long TotalBytes,
     int ScannedRepositoryCount,
     int IncludedRepositoryCount);
+
+internal sealed class RestTrafficResponse
+{
+    [JsonPropertyName("count")]
+    public int Count { get; init; }
+
+    [JsonPropertyName("uniques")]
+    public int Uniques { get; init; }
+
+    [JsonPropertyName("clones")]
+    public List<RestTrafficPoint>? Clones { get; init; }
+
+    [JsonPropertyName("views")]
+    public List<RestTrafficPoint>? Views { get; init; }
+}
+
+internal sealed class RestTrafficPoint
+{
+    [JsonPropertyName("timestamp")]
+    public DateTimeOffset Timestamp { get; init; }
+
+    [JsonPropertyName("count")]
+    public int Count { get; init; }
+
+    [JsonPropertyName("uniques")]
+    public int Uniques { get; init; }
+}
+
+internal sealed record TrafficDayPoint(DateOnly Date, int Count, int Uniques);
+
+internal sealed record RepositoryTrafficSnapshot(
+    int CloneCount,
+    int UniqueCloners,
+    int ViewCount,
+    int UniqueVisitors,
+    IReadOnlyList<TrafficDayPoint> CloneDays,
+    IReadOnlyList<TrafficDayPoint> ViewDays);
+
+internal sealed record RepositoryTrafficTotals(
+    long CloneCountTotal,
+    long UniqueClonersTotal,
+    long ViewCountTotal,
+    long UniqueVisitorsTotal,
+    DateOnly SinceDate,
+    DateOnly LastRecordedDate,
+    bool UpdatedThisRun);
+
+internal sealed class TrafficHistoryState
+{
+    [JsonPropertyName("version")]
+    public int Version { get; init; } = 1;
+
+    [JsonPropertyName("repositories")]
+    public Dictionary<string, TrafficHistoryRepositoryState> Repositories { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+}
+
+internal sealed class TrafficHistoryRepositoryState
+{
+    [JsonPropertyName("cloneDays")]
+    public Dictionary<string, TrafficHistoryDayValue> CloneDays { get; init; } = new(StringComparer.Ordinal);
+
+    [JsonPropertyName("viewDays")]
+    public Dictionary<string, TrafficHistoryDayValue> ViewDays { get; init; } = new(StringComparer.Ordinal);
+}
+
+internal sealed class TrafficHistoryDayValue
+{
+    [JsonPropertyName("count")]
+    public int Count { get; init; }
+
+    [JsonPropertyName("uniques")]
+    public int Uniques { get; init; }
+}

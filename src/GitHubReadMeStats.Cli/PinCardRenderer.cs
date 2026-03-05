@@ -9,7 +9,7 @@ internal static class PinCardRenderer
     public static string Render(PinCardData repository)
     {
         const int width = 495;
-        const int height = 200;
+        const int height = 228;
 
         string title = repository.Name;
         string description = NormalizeDescription(repository.Description);
@@ -26,9 +26,11 @@ internal static class PinCardRenderer
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
         sb.AppendLine("      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }");
-        sb.AppendLine("      .desc { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .meta { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
-        sb.AppendLine("      .sub { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine("      .desc { font: 500 13px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
+        sb.AppendLine("      .traffic { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #BFDBFE; }");
+        sb.AppendLine("      .meta { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
+        sb.AppendLine("      .sub { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine("      .hint { font: 500 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
         sb.AppendLine("      .icon-frame { fill: #0F1E3D; stroke: #3B82F6; stroke-width: 1.4; }");
         sb.AppendLine("      .icon-shape { fill: none; stroke: #7DD3FC; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }");
         sb.AppendLine("      .icon-dot { fill: #22D3EE; }");
@@ -48,19 +50,34 @@ internal static class PinCardRenderer
 
         for (int i = 0; i < lines.Length; i++)
         {
-            sb.AppendLine($"  <text x=\"24\" y=\"{72 + (i * 18)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"{70 + (i * 16)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
+        }
+
+        if (repository.TrafficTotals is not null)
+        {
+            RepositoryTrafficTotals totals = repository.TrafficTotals;
+            sb.AppendLine($"  <text x=\"24\" y=\"124\" class=\"traffic\">Git Clones total: {FormatMetric(totals.CloneCountTotal)}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"138\" class=\"traffic\">Unique cloners total: {FormatMetric(totals.UniqueClonersTotal)}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"152\" class=\"traffic\">Total views total: {FormatMetric(totals.ViewCountTotal)}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"166\" class=\"traffic\">Unique visitors total: {FormatMetric(totals.UniqueVisitorsTotal)}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"223\" class=\"hint\">Traffic since {totals.SinceDate:yyyy-MM-dd} (last {totals.LastRecordedDate:yyyy-MM-dd})</text>");
+        }
+        else
+        {
+            sb.AppendLine("  <text x=\"24\" y=\"146\" class=\"traffic\">Traffic totals: unavailable</text>");
+            sb.AppendLine("  <text x=\"24\" y=\"223\" class=\"hint\">Traffic API requires repository traffic access.</text>");
         }
 
         string language = string.IsNullOrWhiteSpace(repository.PrimaryLanguage) ? "Unknown" : repository.PrimaryLanguage;
         string languageColor = string.IsNullOrWhiteSpace(repository.PrimaryLanguageColor) ? "#94A3B8" : repository.PrimaryLanguageColor;
 
-        sb.AppendLine($"  <circle cx=\"28\" cy=\"158\" r=\"6\" fill=\"{EscapeXml(languageColor)}\" />");
-        sb.AppendLine($"  <text x=\"42\" y=\"163\" class=\"meta\">{EscapeXml(language)}</text>");
-        sb.AppendLine($"  <text x=\"230\" y=\"163\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
-        sb.AppendLine($"  <text x=\"310\" y=\"163\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <circle cx=\"28\" cy=\"187\" r=\"5\" fill=\"{EscapeXml(languageColor)}\" />");
+        sb.AppendLine($"  <text x=\"40\" y=\"191\" class=\"meta\">{EscapeXml(language)}</text>");
+        sb.AppendLine($"  <text x=\"220\" y=\"191\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <text x=\"300\" y=\"191\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
 
         string badge = repository.IsPrivate ? "private" : repository.IsArchived ? "archived" : "public";
-        sb.AppendLine($"  <text x=\"24\" y=\"186\" class=\"sub\">{EscapeXml(repository.Owner)}/{EscapeXml(repository.Name)} • {badge}</text>");
+        sb.AppendLine($"  <text x=\"24\" y=\"208\" class=\"sub\">{EscapeXml(repository.Owner)}/{EscapeXml(repository.Name)} • {badge}</text>");
 
         sb.AppendLine("</svg>");
 
@@ -193,5 +210,10 @@ internal static class PinCardRenderer
         }
 
         return SecurityElement.Escape(value) ?? string.Empty;
+    }
+
+    private static string FormatMetric(long value)
+    {
+        return value.ToString("N0", CultureInfo.InvariantCulture);
     }
 }
