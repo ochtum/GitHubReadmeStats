@@ -14,7 +14,7 @@ internal static class PinCardRenderer
         string title = repository.Name;
         string description = NormalizeDescription(repository.Description);
 
-        string[] lines = WrapDescription(description, maxCharsPerLine: 44, maxLines: 2);
+        string[] lines = WrapDescription(description, maxColumnsPerLine: 46, maxLines: 3);
 
         var sb = new StringBuilder();
 
@@ -25,9 +25,9 @@ internal static class PinCardRenderer
         sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#0B1120\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
-        sb.AppendLine("      .title { font: 700 28px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }");
-        sb.AppendLine("      .desc { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .meta { font: 600 14px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
+        sb.AppendLine("      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }");
+        sb.AppendLine("      .desc { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
+        sb.AppendLine("      .meta { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }");
         sb.AppendLine("      .sub { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
@@ -39,7 +39,7 @@ internal static class PinCardRenderer
 
         for (int i = 0; i < lines.Length; i++)
         {
-            sb.AppendLine($"  <text x=\"24\" y=\"{72 + (i * 22)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
+            sb.AppendLine($"  <text x=\"24\" y=\"{72 + (i * 18)}\" class=\"desc\">{EscapeXml(lines[i])}</text>");
         }
 
         string language = string.IsNullOrWhiteSpace(repository.PrimaryLanguage) ? "Unknown" : repository.PrimaryLanguage;
@@ -72,39 +72,47 @@ internal static class PinCardRenderer
             .Trim();
     }
 
-    private static string[] WrapDescription(string text, int maxCharsPerLine, int maxLines)
+    private static string[] WrapDescription(string text, int maxColumnsPerLine, int maxLines)
     {
-        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var lines = new List<string>();
-        var current = new StringBuilder();
+        var current = new StringBuilder(text.Length);
+        int currentWidth = 0;
+        bool truncated = false;
 
-        foreach (string word in words)
+        for (int i = 0; i < text.Length; i++)
         {
-            if (current.Length == 0)
+            char c = text[i];
+            int charWidth = GetVisualWidth(c);
+
+            if (currentWidth + charWidth > maxColumnsPerLine && current.Length > 0)
             {
-                current.Append(word);
+                lines.Add(current.ToString().TrimEnd());
+                if (lines.Count == maxLines)
+                {
+                    truncated = i < text.Length;
+                    break;
+                }
+
+                current.Clear();
+                currentWidth = 0;
+                if (c == ' ')
+                {
+                    continue;
+                }
+            }
+
+            if (c == ' ' && current.Length == 0)
+            {
                 continue;
             }
 
-            if (current.Length + 1 + word.Length <= maxCharsPerLine)
-            {
-                current.Append(' ').Append(word);
-                continue;
-            }
-
-            lines.Add(current.ToString());
-            current.Clear();
-            current.Append(word);
-
-            if (lines.Count == maxLines)
-            {
-                break;
-            }
+            current.Append(c);
+            currentWidth += charWidth;
         }
 
         if (lines.Count < maxLines && current.Length > 0)
         {
-            lines.Add(current.ToString());
+            lines.Add(current.ToString().TrimEnd());
         }
 
         if (lines.Count == 0)
@@ -117,26 +125,55 @@ internal static class PinCardRenderer
             lines = lines.Take(maxLines).ToList();
         }
 
-        if (lines.Count == maxLines)
+        if (lines.Count == maxLines && truncated)
         {
-            string last = lines[^1];
-            if (text.Length > string.Join(' ', lines).Length && !last.EndsWith("...", StringComparison.Ordinal))
-            {
-                lines[^1] = TrimToLength(last, maxCharsPerLine - 3) + "...";
-            }
+            lines[^1] = TrimToDisplayWidth(lines[^1], maxColumnsPerLine - 3) + "...";
         }
 
         return lines.ToArray();
     }
 
-    private static string TrimToLength(string value, int maxLength)
+    private static string TrimToDisplayWidth(string value, int maxColumns)
     {
-        if (value.Length <= maxLength)
+        int width = 0;
+        var sb = new StringBuilder(value.Length);
+
+        foreach (char c in value)
         {
-            return value;
+            int charWidth = GetVisualWidth(c);
+            if (width + charWidth > maxColumns)
+            {
+                break;
+            }
+
+            sb.Append(c);
+            width += charWidth;
         }
 
-        return value[..maxLength].TrimEnd();
+        return sb.ToString().TrimEnd();
+    }
+
+    private static int GetVisualWidth(char c)
+    {
+        if (c is <= '\u001F' or '\u007F')
+        {
+            return 0;
+        }
+
+        return IsEastAsianWide(c) ? 2 : 1;
+    }
+
+    private static bool IsEastAsianWide(char c)
+    {
+        return c == '\u2329' || c == '\u232A' ||
+               (c >= '\u1100' && c <= '\u115F') ||
+               (c >= '\u2E80' && c <= '\uA4CF' && c != '\u303F') ||
+               (c >= '\uAC00' && c <= '\uD7A3') ||
+               (c >= '\uF900' && c <= '\uFAFF') ||
+               (c >= '\uFE10' && c <= '\uFE19') ||
+               (c >= '\uFE30' && c <= '\uFE6F') ||
+               (c >= '\uFF00' && c <= '\uFF60') ||
+               (c >= '\uFFE0' && c <= '\uFFE6');
     }
 
     private static string EscapeXml(string? value)
