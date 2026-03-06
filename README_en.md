@@ -24,6 +24,8 @@ For real-world usage, we recommend calling this tool from GitHub Actions in each
 - Accumulate daily Traffic data for repositories listed in `cards-config.json` `repositories` into `output/traffic-history.json` to support cumulative display
 - Automatically update a specific section in README (`--update-readme`)
 
+Practical README auto-update example: [README_AUTO_UPDATE_EXAMPLE_en.md](./README_AUTO_UPDATE_EXAMPLE_en.md)
+
 ### Tech Stack
 
 - C# / .NET 10 (`net10.0`)

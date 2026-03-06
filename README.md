@@ -24,6 +24,8 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - `cards-config.json` の `repositories` で指定したリポジトリのTraffic日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
 - README の指定セクションを自動更新可能（`--update-readme`）
 
+README自動更新の実践例: [README_AUTO_UPDATE_EXAMPLE.md](./README_AUTO_UPDATE_EXAMPLE.md)
+
 ### Tech Stack
 
 - C# / .NET 10 (`net10.0`)
