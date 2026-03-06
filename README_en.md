@@ -52,6 +52,8 @@ Theme gallery: [theme-sample.md](./theme-sample.md)
 - Include all repositories where traffic metrics are needed in Fine-grained PAT `Repository access` (all target repos in `cards-config.json`).
 - If you aggregate or generate cards for private repositories, the token must have access to those private repositories.
 
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
+
 ## Prerequisites
 
 Before running this in a profile repository, prepare the following.
@@ -75,6 +77,8 @@ Before running this in a profile repository, prepare the following.
 
 - If your workflow `actions/checkout` uses `repository: ochtum/GitHubReadmeStats`, `GH_TOKEN` must be able to read that repository
 - In the workflow, set `token: ${{ secrets.GH_TOKEN }}` (included as a comment in the README sample)
+
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
 ## Quick Start (local)
 

@@ -41,28 +41,27 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 テーマ別サンプル一覧: [theme-sample.md](./theme-sample.md)
 
-以下は実際の出力例です（`ochtum/ochtum` の `output` を参照）。
+以下はこのリポジトリに保存している `indigo-night` テーマの出力例です。
 
 #### `top-languages.svg`
 
-![top-languages sample](https://raw.githubusercontent.com/ochtum/ochtum/main/output/top-languages.svg)
+![top-languages sample](./theme-sample/indigo-night/top-languages.svg)
 
 #### `github-stats.svg` / `stats.svg`
 
 <div align="center">
-  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/github-stats.svg" alt="github-stats sample" />
-  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/stats.svg" alt="stats sample" />
+  <img width="49%" src="./theme-sample/indigo-night/github-stats.svg" alt="github-stats sample" />
+  <img width="49%" src="./theme-sample/indigo-night/stats.svg" alt="stats sample" />
 </div>
 
 #### `public-repo-totals.svg`
 
-![public-repo-totals sample](https://raw.githubusercontent.com/ochtum/ochtum/main/output/public-repo-totals.svg)
+![public-repo-totals sample](./theme-sample/indigo-night/public-repo-totals.svg)
 
 #### `pins/*.svg`
 
 <div align="center">
-  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/pins/ochtum-CaptureScreenMCP.svg" alt="pin sample 1" />
-  <img width="49%" src="https://raw.githubusercontent.com/ochtum/ochtum/main/output/pins/microsoft-vscode-generator-code.svg" alt="pin sample 2" />
+  <img width="70%" src="./theme-sample/indigo-night/pins/ochtum-GitHubReadmeStats.svg" alt="pin sample" />
 </div>
 
 ### Requirements
@@ -77,6 +76,8 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - リポジトリ card に traffic 指標を表示する場合、Fine-grained PAT では `Administration: Read` も必要です（GitHub Traffic API 要件）。
 - traffic 指標を表示したいリポジトリは、Fine-grained PAT の `Repository access` に含めてください（`cards-config.json` の対象 repo すべて）。
 - private repo を集計/カード化する場合は、その private repo への参照権限が必要です。
+
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
 ## 事前準備
 
@@ -101,6 +102,8 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 - workflow の `actions/checkout` で `repository: ochtum/GitHubReadmeStats` を指定するなら、`GH_TOKEN` がそのリポジトリを読める必要があります
 - workflow 側で `token: ${{ secrets.GH_TOKEN }}` を指定してください（READMEのサンプルにコメント付きで記載）
+
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
 ## Quick Start (local)
 
@@ -202,6 +205,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 - `--cards-config`: stats/pin カード生成設定 JSON
 - `--cards-output-dir`: 互換用の上書きオプション。未指定時は `--output` の親ディレクトリを使用
 
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
+
 ## プロフィールリポジトリでの導入手順
 
 対象は `<user>/<user>` プロフィールリポジトリです。
@@ -286,6 +291,8 @@ jobs:
 
 4. `Actions -> update-profile-readme-stats -> Run workflow` を実行
 
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
+
 ## README.md への埋め込みサンプル
 
 `<user>/<user>` の `README.md` に、次のように記載すると生成済みカードを表示できます。
@@ -322,6 +329,8 @@ jobs:
 
 Traffic累積を維持するには、workflow の commit 対象に `output/traffic-history.json` を含めてください。
 
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
+
 ## 制約
 
 - `top-languages` 集計対象は、実行トークンの `viewer` が所有するリポジトリです。
@@ -329,6 +338,8 @@ Traffic累積を維持するには、workflow の commit 対象に `output/traff
 - アクセス権のない private repo は取得できません。
 - Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json` に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
 - `Unique cloners/visitors` の全期間ユニーク人数を厳密に復元するAPIはないため、累積表示は「日次 uniques の合算」です。
+
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
 ## 定期実行したい場合
 
@@ -353,10 +364,14 @@ on:
 - 毎週 月曜 09:00 JST: `0 0 * * 1`
 - 毎月 1日 09:00 JST: `0 0 1 * *`
 
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
+
 ## 参考
 
 - https://zenn.dev/chot/articles/30b08c452795eb
 - https://github.com/4okimi7uki/repo-spector
+
+![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
 ## ライセンス
 
