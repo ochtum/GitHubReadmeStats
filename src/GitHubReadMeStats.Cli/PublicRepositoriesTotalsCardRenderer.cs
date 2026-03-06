@@ -16,10 +16,10 @@ internal static class PublicRepositoriesTotalsCardRenderer
         TimeDisplaySettings timeDisplay,
         CardColorTheme? colorTheme = null)
     {
-        const int width = 640;
+        const int canvasWidth = 640;
         const int height = 260;
         const int cardX = 24;
-        const int cardWidth = width - (cardX * 2);
+        const int cardWidth = canvasWidth - (cardX * 2);
 
         DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
 
@@ -62,7 +62,7 @@ internal static class PublicRepositoriesTotalsCardRenderer
         hintColor = EnsureAaTextColor(hintColor, trafficBackgroundStart, trafficBackgroundEnd, backgroundStart, backgroundEnd);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"Public repository totals for {EscapeXml(totals.ViewerLogin)}\">");
+        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{height}\" viewBox=\"0 0 {canvasWidth} {height}\" role=\"img\" aria-label=\"Public repository totals for {EscapeXml(totals.ViewerLogin)}\">");
         sb.AppendLine("  <defs>");
         sb.AppendLine("    <linearGradient id=\"totals-bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\">");
         sb.AppendLine($"      <stop offset=\"0%\" stop-color=\"{EscapeXml(backgroundStart)}\" />");
@@ -80,8 +80,8 @@ internal static class PublicRepositoriesTotalsCardRenderer
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
-        sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"18\" fill=\"url(#totals-bg)\" />");
-        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
+        sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{canvasWidth}\" height=\"{height}\" rx=\"18\" fill=\"url(#totals-bg)\" />");
+        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{canvasWidth - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
 
         sb.AppendLine($"  <text x=\"{cardX}\" y=\"42\" class=\"title\">Public Repository Totals</text>");
         sb.AppendLine($"  <text x=\"{cardX}\" y=\"66\" class=\"sub\">@{EscapeXml(totals.ViewerLogin)} | {totals.PublicRepositoryCount.ToString("N0", CultureInfo.InvariantCulture)} public repos</text>");

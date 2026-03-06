@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace GitHubReadMeStats.Cli;
 
 internal static class CliParser
@@ -7,6 +9,8 @@ internal static class CliParser
 
     private const string DefaultOutputPath = "output";
     private const string DefaultLanguageCardFileName = "top-languages.svg";
+    private const string DefaultTopLanguagesReadmeWidth = "60%";
+    private const string DefaultPublicRepoTotalsReadmeWidth = "60%";
     private const int DefaultTopCount = 6;
     private const string DefaultTopLanguagesStartMarker = "<!-- github-readme-stats:start -->";
     private const string DefaultTopLanguagesEndMarker = "<!-- github-readme-stats:end -->";
@@ -21,6 +25,8 @@ internal static class CliParser
     {
         string? token = null;
         string outputPath = DefaultOutputPath;
+        string topLanguagesReadmeWidth = DefaultTopLanguagesReadmeWidth;
+        string publicRepoTotalsReadmeWidth = DefaultPublicRepoTotalsReadmeWidth;
         string excludedLanguages = Environment.GetEnvironmentVariable("EXCLUDED_LANGUAGES") ?? string.Empty;
         int top = DefaultTopCount;
         bool includeForks = false;
@@ -61,6 +67,18 @@ internal static class CliParser
             if (TryParseInlineValue(arg, "--output", out string outputValue))
             {
                 outputPath = outputValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--top-languages-readme-width", out string topLanguagesReadmeWidthValue))
+            {
+                topLanguagesReadmeWidth = topLanguagesReadmeWidthValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--public-repo-totals-readme-width", out string publicRepoTotalsReadmeWidthValue))
+            {
+                publicRepoTotalsReadmeWidth = publicRepoTotalsReadmeWidthValue;
                 continue;
             }
 
@@ -180,6 +198,24 @@ internal static class CliParser
                     outputPath = value;
                     break;
                 }
+
+                case "--top-languages-readme-width":
+                    topLanguagesReadmeWidth = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(topLanguagesReadmeWidth))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--public-repo-totals-readme-width":
+                    publicRepoTotalsReadmeWidth = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(publicRepoTotalsReadmeWidth))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
 
                 case "-x":
                 case "--exclude-languages":
@@ -339,6 +375,16 @@ internal static class CliParser
             return new CliParseResult(null, "--output requires a non-empty value.", false, false);
         }
 
+        if (!TryNormalizeReadmeImageWidth(topLanguagesReadmeWidth, out string normalizedTopLanguagesReadmeWidth))
+        {
+            return new CliParseResult(null, "--top-languages-readme-width must be a positive number or percentage (e.g. 640, 100%).", false, false);
+        }
+
+        if (!TryNormalizeReadmeImageWidth(publicRepoTotalsReadmeWidth, out string normalizedPublicRepoTotalsReadmeWidth))
+        {
+            return new CliParseResult(null, "--public-repo-totals-readme-width must be a positive number or percentage (e.g. 640, 100%).", false, false);
+        }
+
         string resolvedOutputPath = ResolveOutputPath(outputPath);
 
         if (string.IsNullOrWhiteSpace(topLanguagesStartMarker) || string.IsNullOrWhiteSpace(topLanguagesEndMarker))
@@ -400,6 +446,8 @@ internal static class CliParser
         var options = new CliOptions(
             resolvedToken,
             resolvedOutputPath,
+            normalizedTopLanguagesReadmeWidth,
+            normalizedPublicRepoTotalsReadmeWidth,
             excludedLanguageList,
             top,
             includeForks,
@@ -433,6 +481,8 @@ internal static class CliParser
             "  -v, --version                   Show version\n" +
             "  -t, --github-token <token>      GitHub PAT (or GH_TOKEN / GITHUB_TOKEN env)\n" +
             "  -o, --output <path>             Language card output path or directory (default: output -> output/top-languages.svg)\n" +
+            "      --top-languages-readme-width <value> README img width for top-languages (default: 60%)\n" +
+            "      --public-repo-totals-readme-width <value> README img width for public-repo-totals (default: 60%)\n" +
             "  -x, --exclude-languages <csv>   Exclude language names (default: EXCLUDED_LANGUAGES env)\n" +
             "      --top <n>                   Number of languages to render (1-20, default: 6)\n" +
             "      --include-forks             Include fork repositories\n" +
@@ -521,5 +571,30 @@ internal static class CliParser
             .Where(x => !string.IsNullOrWhiteSpace(x))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+    }
+
+    private static bool TryNormalizeReadmeImageWidth(string value, out string normalized)
+    {
+        normalized = string.Empty;
+        string trimmed = value.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return false;
+        }
+
+        bool isPercent = trimmed.EndsWith('%');
+        string numericPart = isPercent ? trimmed[..^1].Trim() : trimmed;
+        if (!double.TryParse(numericPart, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) || parsed <= 0d)
+        {
+            return false;
+        }
+
+        normalized = parsed.ToString("0.##", CultureInfo.InvariantCulture);
+        if (isPercent)
+        {
+            normalized += "%";
+        }
+
+        return true;
     }
 }

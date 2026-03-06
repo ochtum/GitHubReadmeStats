@@ -21,7 +21,7 @@ internal static class SvgRenderer
         IReadOnlyList<AggregatedLanguage> topLanguages = aggregation.Languages.Take(topCount).ToList();
         DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
 
-        const int width = 640;
+        const int canvasWidth = 640;
         const int horizontalPadding = 24;
         const int titleY = 42;
         const int subtitleY = 66;
@@ -40,7 +40,7 @@ internal static class SvgRenderer
         int height = footerY + bottomPadding;
 
         int chartX = horizontalPadding;
-        int chartWidth = width - (horizontalPadding * 2);
+        int chartWidth = canvasWidth - (horizontalPadding * 2);
 
         string backgroundStart = colorTheme?.BackgroundStart ?? "#0F172A";
         string backgroundEnd = colorTheme?.BackgroundEnd ?? "#111827";
@@ -52,7 +52,7 @@ internal static class SvgRenderer
 
         var sb = new StringBuilder();
 
-        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub readme language stats\">");
+        sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{height}\" viewBox=\"0 0 {canvasWidth} {height}\" role=\"img\" aria-label=\"GitHub readme language stats\">");
         sb.AppendLine("  <defs>");
         sb.AppendLine("    <linearGradient id=\"card-bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\">");
         sb.AppendLine($"      <stop offset=\"0%\" stop-color=\"{EscapeXml(backgroundStart)}\" />");
@@ -67,8 +67,8 @@ internal static class SvgRenderer
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
-        sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"18\" fill=\"url(#card-bg)\" />");
-        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
+        sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{canvasWidth}\" height=\"{height}\" rx=\"18\" fill=\"url(#card-bg)\" />");
+        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{canvasWidth - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
 
         sb.AppendLine($"  <text x=\"{horizontalPadding}\" y=\"{titleY}\" class=\"title\">Most Used Languages</text>");
         sb.AppendLine($"  <text x=\"{horizontalPadding}\" y=\"{subtitleY}\" class=\"sub\">@{EscapeXml(viewerLogin)} | {aggregation.IncludedRepositoryCount} repos | updated {generatedAtLocal:yyyy-MM-dd HH:mm} {EscapeXml(timeDisplay.Label)}</text>");

@@ -217,6 +217,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 - `--include-forks`: fork を集計対象に含める
 - `--include-archived`: archived を集計対象に含める
 - `--update-readme`: README 更新対象パス
+- `--top-languages-readme-width`: READMEの `top-languages` `<img width="...">` 値（default: `60%`、`--update-readme` 時に使用）
+- `--public-repo-totals-readme-width`: READMEの `public-repo-totals` `<img width="...">` 値（default: `60%`、`--update-readme` 時に使用）
 - `--pins-columns`: README の pins 表示列数 (`1` or `2`, default: `2`)
 - `--top-languages-start-marker`: Top Languages セクション開始マーカー
 - `--top-languages-end-marker`: Top Languages セクション終了マーカー

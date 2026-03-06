@@ -192,6 +192,8 @@ Notes:
 - `--include-forks`: Include fork repositories in aggregation
 - `--include-archived`: Include archived repositories in aggregation
 - `--update-readme`: Path of README to update
+- `--top-languages-readme-width`: README `top-languages` `<img width="...">` value (default: `60%`, used with `--update-readme`)
+- `--public-repo-totals-readme-width`: README `public-repo-totals` `<img width="...">` value (default: `60%`, used with `--update-readme`)
 - `--pins-columns`: Pin card columns in README (`1` or `2`, default: `2`)
 - `--top-languages-start-marker`: Top Languages section start marker
 - `--top-languages-end-marker`: Top Languages section end marker

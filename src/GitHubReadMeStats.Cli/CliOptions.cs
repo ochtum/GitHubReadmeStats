@@ -3,6 +3,8 @@ namespace GitHubReadMeStats.Cli;
 internal sealed record CliOptions(
     string GitHubToken,
     string OutputPath,
+    string TopLanguagesReadmeWidth,
+    string PublicRepoTotalsReadmeWidth,
     string[] ExcludedLanguages,
     int Top,
     bool IncludeForks,

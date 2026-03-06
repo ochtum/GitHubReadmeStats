@@ -10,6 +10,8 @@ internal static class ReadmeUpdater
         ReadmeImagePaths imagePaths,
         IReadOnlyList<ReadmePinEntry> pins,
         int pinsColumns,
+        string topLanguagesWidth,
+        string publicRepoTotalsWidth,
         CancellationToken cancellationToken = default)
     {
         string original = File.Exists(readmePath)
@@ -30,12 +32,12 @@ internal static class ReadmeUpdater
                 "top-languages",
                 markers.TopLanguagesStart,
                 markers.TopLanguagesEnd,
-                BuildTopLanguagesSectionBody(imagePaths)),
+                BuildTopLanguagesSectionBody(imagePaths, topLanguagesWidth)),
             new ReadmeSectionUpdate(
                 "stats",
                 markers.StatsStart,
                 markers.StatsEnd,
-                BuildStatsSectionBody(imagePaths)),
+                BuildStatsSectionBody(imagePaths, publicRepoTotalsWidth)),
             new ReadmeSectionUpdate(
                 "pins-own",
                 markers.OwnPinsStart,
@@ -81,17 +83,19 @@ internal static class ReadmeUpdater
         return new ReadmeUpdateResult(true, updateSummary);
     }
 
-    private static string BuildTopLanguagesSectionBody(ReadmeImagePaths imagePaths)
+    private static string BuildTopLanguagesSectionBody(ReadmeImagePaths imagePaths, string width)
     {
+        string normalizedWidth = NormalizeReadmeWidth(width);
         var sb = new StringBuilder();
-        sb.AppendLine("<div align=\"center\">");
-        sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.TopLanguages}\" alt=\"top-languages\" />");
+        sb.AppendLine("<div align=\"left\">");
+        sb.AppendLine($"  <img width=\"{normalizedWidth}\" src=\"{imagePaths.TopLanguages}\" alt=\"top-languages\" />");
         sb.AppendLine("</div>");
         return sb.ToString().TrimEnd();
     }
 
-    private static string BuildStatsSectionBody(ReadmeImagePaths imagePaths)
+    private static string BuildStatsSectionBody(ReadmeImagePaths imagePaths, string publicRepoTotalsWidth)
     {
+        string normalizedPublicRepoTotalsWidth = NormalizeReadmeWidth(publicRepoTotalsWidth);
         bool hasAnyStatsImage =
             !string.IsNullOrWhiteSpace(imagePaths.GitHubStats) ||
             !string.IsNullOrWhiteSpace(imagePaths.Stats) ||
@@ -103,37 +107,36 @@ internal static class ReadmeUpdater
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("<div align=\"center\">");
 
         bool hasTopRow =
             !string.IsNullOrWhiteSpace(imagePaths.GitHubStats) ||
             !string.IsNullOrWhiteSpace(imagePaths.Stats);
 
-        if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats) && !string.IsNullOrWhiteSpace(imagePaths.Stats))
+        if (hasTopRow)
         {
-            sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
-            sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
-        }
-        else if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats))
-        {
-            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
-        }
-        else if (!string.IsNullOrWhiteSpace(imagePaths.Stats))
-        {
-            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
+            sb.AppendLine("<div align=\"left\">");
+            if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats) && !string.IsNullOrWhiteSpace(imagePaths.Stats))
+            {
+                sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
+                sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
+            }
+            else if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats))
+            {
+                sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
+            }
+            else if (!string.IsNullOrWhiteSpace(imagePaths.Stats))
+            {
+                sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
+            }
+            sb.AppendLine("</div>");
         }
 
         if (!string.IsNullOrWhiteSpace(imagePaths.PublicRepoTotals))
         {
-            if (hasTopRow)
-            {
-                sb.AppendLine("  <br />");
-            }
-
-            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.PublicRepoTotals}\" alt=\"public-repo-totals\" />");
+            sb.AppendLine("<div align=\"left\">");
+            sb.AppendLine($"  <img width=\"{normalizedPublicRepoTotalsWidth}\" src=\"{imagePaths.PublicRepoTotals}\" alt=\"public-repo-totals\" />");
+            sb.AppendLine("</div>");
         }
-
-        sb.AppendLine("</div>");
 
         return sb.ToString().TrimEnd();
     }
@@ -152,7 +155,7 @@ internal static class ReadmeUpdater
 
         for (int i = 0; i < pins.Count; i += columns)
         {
-            sb.AppendLine("<p align=\"center\">");
+            sb.AppendLine("<p align=\"left\">");
             for (int j = i; j < Math.Min(i + columns, pins.Count); j++)
             {
                 ReadmePinEntry pin = pins[j];
@@ -226,6 +229,11 @@ internal static class ReadmeUpdater
         }
 
         return $"{updated}; skipped: {string.Join(" | ", skippedSections)}";
+    }
+
+    private static string NormalizeReadmeWidth(string width)
+    {
+        return string.IsNullOrWhiteSpace(width) ? "100%" : width.Trim();
     }
 
     private sealed record ReadmeSectionUpdate(string Name, string StartMarker, string EndMarker, string Body);

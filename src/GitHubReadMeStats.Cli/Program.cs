@@ -62,7 +62,13 @@ internal static class Program
             }
 
             DateTimeOffset generatedAtUtc = DateTimeOffset.UtcNow;
-            string svg = SvgRenderer.Render(repositoriesResult.ViewerLogin, aggregation, options.Top, generatedAtUtc, timeDisplay, colorTheme);
+            string svg = SvgRenderer.Render(
+                repositoriesResult.ViewerLogin,
+                aggregation,
+                options.Top,
+                generatedAtUtc,
+                timeDisplay,
+                colorTheme);
 
             EnsureParentDirectory(options.OutputPath);
             await File.WriteAllTextAsync(options.OutputPath, svg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -98,7 +104,9 @@ internal static class Program
                     readmeSectionMarkers,
                     readmeImagePaths,
                     readmePins,
-                    options.PinsColumnsForReadme);
+                    options.PinsColumnsForReadme,
+                    options.TopLanguagesReadmeWidth,
+                    options.PublicRepoTotalsReadmeWidth);
 
                 if (updateResult.Updated)
                 {
@@ -254,7 +262,11 @@ internal static class Program
             trafficSinceDate,
             trafficLastRecordedDate);
 
-        string totalsSvg = PublicRepositoriesTotalsCardRenderer.Render(totalsCardData, generatedAtUtc, timeDisplay, colorTheme);
+        string totalsSvg = PublicRepositoriesTotalsCardRenderer.Render(
+            totalsCardData,
+            generatedAtUtc,
+            timeDisplay,
+            colorTheme);
         string totalsPath = Path.Combine(options.CardsOutputDir, "public-repo-totals.svg");
         EnsureParentDirectory(totalsPath);
         await File.WriteAllTextAsync(totalsPath, totalsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
