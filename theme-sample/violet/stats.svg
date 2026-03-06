@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="495" height="210" viewBox="0 0 495 210" role="img" aria-label="GitHub profile stats with yearly contribution trend">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#6D28D9" />
+      <stop offset="100%" stop-color="#5824B2" />
+    </linearGradient>
+    <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#D1BBF3" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#D1BBF3" stop-opacity="0.05" />
+    </linearGradient>
+    <style>
+      .title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #EFE6FC; }
+      .login { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #CEBFED; }
+      .value { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .axis { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #CEBFED; }
+      .xaxis { font: 600 8px 'Segoe UI', Arial, sans-serif; fill: #B9A1E5; }
+      .meta { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #A17FDD; }
+      .chart-title { font: 700 8px 'Segoe UI', Arial, sans-serif; fill: #EFE6FC; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="495" height="210" rx="8" fill="url(#bg)" />
+  <rect x="1" y="1" width="493" height="208" rx="7" fill="none" stroke="#B394E5" />
+  <text x="18" y="26" class="title">ochtum (Ochtum)</text>
+  <text x="18" y="45" class="login">@ochtum</text>
+  <circle cx="20" cy="66" r="3" fill="#EFE6FC" />
+  <text x="28" y="69" class="value">170 Contributions in 2026</text>
+  <circle cx="20" cy="82" r="3" fill="#F7E6FC" />
+  <text x="28" y="85" class="value">21 Public Repositories</text>
+  <circle cx="20" cy="98" r="3" fill="#E7E6FC" />
+  <text x="28" y="101" class="value">42 Private Repositories</text>
+  <circle cx="20" cy="114" r="3" fill="#FCE6F8" />
+  <text x="28" y="117" class="value">95 Forked Repositories</text>
+  <circle cx="20" cy="130" r="3" fill="#E6EEFC" />
+  <text x="28" y="133" class="value">Joined GitHub 3 years ago</text>
+  <circle cx="20" cy="146" r="3" fill="#FCE6EF" />
+  <text x="28" y="149" class="value">Tokyo</text>
+  <text x="365" y="14" class="chart-title">contributions in the last year</text>
+  <rect x="224" y="26" width="245" height="132" rx="4" fill="#743FCC" fill-opacity="0.34" />
+  <line x1="224" y1="158" x2="469" y2="158" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="161" class="axis">0</text>
+  <line x1="224" y1="143.33" x2="469" y2="143.33" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="146.33" class="axis">20</text>
+  <line x1="224" y1="128.67" x2="469" y2="128.67" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="131.67" class="axis">40</text>
+  <line x1="224" y1="114" x2="469" y2="114" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="117" class="axis">60</text>
+  <line x1="224" y1="99.33" x2="469" y2="99.33" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="102.33" class="axis">80</text>
+  <line x1="224" y1="84.67" x2="469" y2="84.67" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="87.67" class="axis">100</text>
+  <line x1="224" y1="70" x2="469" y2="70" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="73" class="axis">120</text>
+  <line x1="224" y1="55.33" x2="469" y2="55.33" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="58.33" class="axis">140</text>
+  <line x1="224" y1="40.67" x2="469" y2="40.67" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="43.67" class="axis">160</text>
+  <line x1="224" y1="26" x2="469" y2="26" stroke="#8E62D7" stroke-opacity="0.55" />
+  <text x="475" y="29" class="axis">180</text>
+  <path d="M 224 158 L 224 140.4 C 227.4 136.37 237.61 132.94 244.42 116.2 C 251.22 99.46 258.03 39.69 264.83 39.93 C 271.64 40.18 278.44 99.33 285.25 117.67 C 292.06 136 298.86 144.92 305.67 149.93 C 312.47 154.94 319.28 147.49 326.08 147.73 C 332.89 147.98 339.69 154.33 346.5 151.4 C 353.31 148.47 360.11 134.29 366.92 130.13 C 373.72 125.98 380.53 125.73 387.33 126.47 C 394.14 127.2 400.94 132.21 407.75 134.53 C 414.56 136.86 421.36 145.41 428.17 140.4 C 434.97 135.39 441.78 110.46 448.58 104.47 C 455.39 98.48 465.6 104.47 469 104.47 L 469 158 Z" fill="url(#area)" stroke="none" />
+  <path d="M 224 140.4 C 227.4 136.37 237.61 132.94 244.42 116.2 C 251.22 99.46 258.03 39.69 264.83 39.93 C 271.64 40.18 278.44 99.33 285.25 117.67 C 292.06 136 298.86 144.92 305.67 149.93 C 312.47 154.94 319.28 147.49 326.08 147.73 C 332.89 147.98 339.69 154.33 346.5 151.4 C 353.31 148.47 360.11 134.29 366.92 130.13 C 373.72 125.98 380.53 125.73 387.33 126.47 C 394.14 127.2 400.94 132.21 407.75 134.53 C 414.56 136.86 421.36 145.41 428.17 140.4 C 434.97 135.39 441.78 110.46 448.58 104.47 C 455.39 98.48 465.6 104.47 469 104.47" fill="none" stroke="#EFE6FC" stroke-width="2" />
+  <text x="224" y="171" class="xaxis" text-anchor="middle">25/03</text>
+  <text x="264.83" y="171" class="xaxis" text-anchor="middle">25/05</text>
+  <text x="305.67" y="171" class="xaxis" text-anchor="middle">25/07</text>
+  <text x="346.5" y="171" class="xaxis" text-anchor="middle">25/09</text>
+  <text x="387.33" y="171" class="xaxis" text-anchor="middle">25/11</text>
+  <text x="428.17" y="171" class="xaxis" text-anchor="middle">26/01</text>
+  <text x="469" y="171" class="xaxis" text-anchor="middle">26/03</text>
+  <text x="18" y="198" class="meta">Updated 2026-03-06 15:34 JST</text>
+</svg>
+

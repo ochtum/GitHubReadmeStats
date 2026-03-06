@@ -1,5 +1,6 @@
 {
   "username": "your-github-id",
+  "theme": "indigo-night",
   "repositories": [
     "your-github-id/your-repo-1",
     "your-github-id/your-repo-2",

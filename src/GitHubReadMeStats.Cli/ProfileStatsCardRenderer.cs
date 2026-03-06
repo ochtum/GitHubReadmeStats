@@ -6,7 +6,11 @@ namespace GitHubReadMeStats.Cli;
 
 internal static class ProfileStatsCardRenderer
 {
-    public static string Render(UserSummary summary, DateTimeOffset generatedAtUtc, TimeDisplaySettings timeDisplay)
+    public static string Render(
+        UserSummary summary,
+        DateTimeOffset generatedAtUtc,
+        TimeDisplaySettings timeDisplay,
+        CardColorTheme? colorTheme = null)
     {
         const int width = 495;
         const int height = 210;
@@ -26,58 +30,75 @@ internal static class ProfileStatsCardRenderer
 
         int joinedYears = CalculateJoinedYears(summary.CreatedAt.UtcDateTime.Date, generatedAtLocal.Date);
 
+        string backgroundStart = colorTheme?.BackgroundStart ?? "#090E2C";
+        string backgroundEnd = colorTheme?.BackgroundEnd ?? "#041738";
+        string borderColor = colorTheme?.Border ?? "#1E3A8A";
+        string areaColor = colorTheme?.Accent ?? "#16F2D1";
+        string titleColor = colorTheme?.TitleText ?? "#F43F98";
+        string loginColor = colorTheme?.SecondaryText ?? "#22D3EE";
+        string valueColor = colorTheme?.PrimaryText ?? "#7DD3FC";
+        string axisColor = colorTheme?.SecondaryText ?? "#38BDF8";
+        string xAxisColor = colorTheme?.TertiaryText ?? "#22D3EE";
+        string metaColor = colorTheme?.MutedText ?? "#64748B";
+        string chartTitleColor = colorTheme?.AccentStrong ?? "#06B6D4";
+        string chartPanelFill = colorTheme?.PanelFill ?? "#020817";
+        string chartPanelOpacity = colorTheme is null ? "0.25" : "0.34";
+        string gridColor = colorTheme?.ChartGrid ?? "#1E3A8A";
+        string lineColor = colorTheme?.ChartLine ?? "#06B6D4";
+        string[] metricDotColors = ResolveMetricDotColors(colorTheme);
+
         var sb = new StringBuilder();
         sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub profile stats with yearly contribution trend\">");
         sb.AppendLine("  <defs>");
         sb.AppendLine("    <linearGradient id=\"bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\">");
-        sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#090E2C\" />");
-        sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#041738\" />");
+        sb.AppendLine($"      <stop offset=\"0%\" stop-color=\"{EscapeXml(backgroundStart)}\" />");
+        sb.AppendLine($"      <stop offset=\"100%\" stop-color=\"{EscapeXml(backgroundEnd)}\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <linearGradient id=\"area\" x1=\"0\" x2=\"0\" y1=\"0\" y2=\"1\">");
-        sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#16F2D1\" stop-opacity=\"0.95\" />");
-        sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#16F2D1\" stop-opacity=\"0.05\" />");
+        sb.AppendLine($"      <stop offset=\"0%\" stop-color=\"{EscapeXml(areaColor)}\" stop-opacity=\"0.95\" />");
+        sb.AppendLine($"      <stop offset=\"100%\" stop-color=\"{EscapeXml(areaColor)}\" stop-opacity=\"0.05\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
-        sb.AppendLine("      .title { font: 700 21px 'Segoe UI', Arial, sans-serif; fill: #F43F98; }");
-        sb.AppendLine("      .login { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .value { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #7DD3FC; }");
-        sb.AppendLine("      .axis { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #38BDF8; }");
-        sb.AppendLine("      .xaxis { font: 600 8px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }");
-        sb.AppendLine("      .meta { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }");
-        sb.AppendLine("      .chart-title { font: 700 8px 'Segoe UI', Arial, sans-serif; fill: #06B6D4; }");
+        sb.AppendLine($"      .title {{ font: 700 21px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(titleColor)}; }}");
+        sb.AppendLine($"      .login {{ font: 700 12px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(loginColor)}; }}");
+        sb.AppendLine($"      .value {{ font: 700 12px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(valueColor)}; }}");
+        sb.AppendLine($"      .axis {{ font: 600 9px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(axisColor)}; }}");
+        sb.AppendLine($"      .xaxis {{ font: 600 8px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(xAxisColor)}; }}");
+        sb.AppendLine($"      .meta {{ font: 600 10px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(metaColor)}; }}");
+        sb.AppendLine($"      .chart-title {{ font: 700 8px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(chartTitleColor)}; }}");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
         sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"8\" fill=\"url(#bg)\" />");
-        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"7\" fill=\"none\" stroke=\"#1E3A8A\" />");
+        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"7\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
 
         sb.AppendLine($"  <text x=\"18\" y=\"26\" class=\"title\">{EscapeXml(summary.Login)} ({EscapeXml(summary.DisplayName)})</text>");
         sb.AppendLine($"  <text x=\"18\" y=\"45\" class=\"login\">@{EscapeXml(summary.Login)}</text>");
 
         int metricY = 69;
-        AppendMetricRow(sb, metricY, "#FACC15", $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtLocal.Year}");
-        AppendMetricRow(sb, metricY + 16, "#22D3EE", $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
-        AppendMetricRow(sb, metricY + 32, "#38BDF8", $"{summary.PrivateRepositories.ToString("N0", CultureInfo.InvariantCulture)} Private Repositories");
-        AppendMetricRow(sb, metricY + 48, "#A78BFA", $"{summary.ForkedRepositories.ToString("N0", CultureInfo.InvariantCulture)} Forked Repositories");
-        AppendMetricRow(sb, metricY + 64, "#84CC16", $"Joined GitHub {joinedYears} years ago");
+        AppendMetricRow(sb, metricY, metricDotColors[0], $"{summary.ContributionsThisYear.ToString("N0", CultureInfo.InvariantCulture)} Contributions in {generatedAtLocal.Year}");
+        AppendMetricRow(sb, metricY + 16, metricDotColors[1], $"{summary.PublicRepositories.ToString("N0", CultureInfo.InvariantCulture)} Public Repositories");
+        AppendMetricRow(sb, metricY + 32, metricDotColors[2], $"{summary.PrivateRepositories.ToString("N0", CultureInfo.InvariantCulture)} Private Repositories");
+        AppendMetricRow(sb, metricY + 48, metricDotColors[3], $"{summary.ForkedRepositories.ToString("N0", CultureInfo.InvariantCulture)} Forked Repositories");
+        AppendMetricRow(sb, metricY + 64, metricDotColors[4], $"Joined GitHub {joinedYears} years ago");
         if (!string.IsNullOrWhiteSpace(summary.Location))
         {
-            AppendMetricRow(sb, metricY + 80, "#F472B6", summary.Location!);
+            AppendMetricRow(sb, metricY + 80, metricDotColors[5], summary.Location!);
         }
 
         sb.AppendLine($"  <text x=\"{chartX + chartWidth - 104}\" y=\"14\" class=\"chart-title\">contributions in the last year</text>");
-        sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{chartY}\" width=\"{chartWidth}\" height=\"{chartHeight}\" rx=\"4\" fill=\"#020817\" fill-opacity=\"0.25\" />");
+        sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{chartY}\" width=\"{chartWidth}\" height=\"{chartHeight}\" rx=\"4\" fill=\"{EscapeXml(chartPanelFill)}\" fill-opacity=\"{chartPanelOpacity}\" />");
 
         for (int value = 0; value <= axisMax; value += 20)
         {
             double ratio = axisMax == 0 ? 0 : value / (double)axisMax;
             double y = chartY + chartHeight - (chartHeight * ratio);
-            sb.AppendLine($"  <line x1=\"{chartX}\" y1=\"{FormatNumber(y)}\" x2=\"{chartX + chartWidth}\" y2=\"{FormatNumber(y)}\" stroke=\"#1E3A8A\" stroke-opacity=\"0.55\" />");
+            sb.AppendLine($"  <line x1=\"{chartX}\" y1=\"{FormatNumber(y)}\" x2=\"{chartX + chartWidth}\" y2=\"{FormatNumber(y)}\" stroke=\"{EscapeXml(gridColor)}\" stroke-opacity=\"0.55\" />");
             sb.AppendLine($"  <text x=\"{chartX + chartWidth + 6}\" y=\"{FormatNumber(y + 3)}\" class=\"axis\">{value}</text>");
         }
 
         sb.AppendLine($"  <path d=\"{areaPath}\" fill=\"url(#area)\" stroke=\"none\" />");
-        sb.AppendLine($"  <path d=\"{linePath}\" fill=\"none\" stroke=\"#06B6D4\" stroke-width=\"2\" />");
+        sb.AppendLine($"  <path d=\"{linePath}\" fill=\"none\" stroke=\"{EscapeXml(lineColor)}\" stroke-width=\"2\" />");
 
         for (int i = 0; i < monthlySeries.Count; i++)
         {
@@ -246,6 +267,23 @@ internal static class ProfileStatsCardRenderer
     private static string FormatNumber(double value)
     {
         return value.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static string[] ResolveMetricDotColors(CardColorTheme? colorTheme)
+    {
+        string[] defaults = ["#FACC15", "#22D3EE", "#38BDF8", "#A78BFA", "#84CC16", "#F472B6"];
+        if (colorTheme is null || colorTheme.MetricDotPalette.Count == 0)
+        {
+            return defaults;
+        }
+
+        var result = new string[defaults.Length];
+        for (int i = 0; i < result.Length; i++)
+        {
+            result[i] = colorTheme.MetricDotPalette[i % colorTheme.MetricDotPalette.Count];
+        }
+
+        return result;
     }
 
     private sealed record MonthlyContributionPoint(DateOnly Month, int Count);

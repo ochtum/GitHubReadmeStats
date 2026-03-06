@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="495" height="228" viewBox="0 0 495 228" role="img" aria-label="Repository card for ochtum/GitHubReadmeStats">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#0B1120" />
+    </linearGradient>
+    <style>
+      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #60A5FA; }
+      .desc { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #22D3EE; }
+      .traffic-label { font: 600 9px 'Segoe UI', Arial, sans-serif; fill: #93C5FD; }
+      .traffic-value { font: 700 17px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }
+      .meta { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #E2E8F0; }
+      .sub { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }
+      .badge-text { font: 700 9px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }
+      .hint { font: 500 10px 'Segoe UI', Arial, sans-serif; fill: #64748B; }
+      .traffic-panel { fill: #0A1E3A; fill-opacity: 0.55; stroke: #1D4ED8; stroke-opacity: 0.65; }
+      .traffic-sep { stroke: #1D4ED8; stroke-opacity: 0.45; }
+      .icon-frame { fill: #F8FAFC; stroke: #3B82F6; stroke-width: 1.4; }
+      .icon-image-bg { fill: #0B1224; }
+      .icon-shape { fill: none; stroke: #0F172A; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+      .icon-dot { fill: #0F172A; }
+    </style>
+    <clipPath id="iconClip">
+      <rect x="4" y="4" width="20" height="20" rx="4" />
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="495" height="228" rx="8" fill="url(#bg)" />
+  <rect x="1" y="1" width="493" height="226" rx="7" fill="none" stroke="#334155" />
+  <g transform="translate(24 18)">
+    <rect x="0" y="0" width="28" height="28" rx="7" class="icon-frame" />
+    <path d="M6 10h6l2.2 3H22v9H6z" class="icon-shape" />
+    <path d="M6 13h16" class="icon-shape" />
+    <circle cx="20" cy="8" r="2" class="icon-dot" />
+  </g>
+  <text x="62" y="40" class="title">GitHubReadmeStats</text>
+  <text x="24" y="70" class="desc">GitHub GraphQL API を使って、プロフィール README 向けの SVG を自</text>
+  <text x="24" y="87" class="desc">前生成する CLI です。</text>
+  <rect x="24" y="124" width="447" height="58" rx="8" class="traffic-panel" />
+  <line x1="135" y1="132" x2="135" y2="174" class="traffic-sep" />
+  <line x1="246" y1="132" x2="246" y2="174" class="traffic-sep" />
+  <line x1="357" y1="132" x2="357" y2="174" class="traffic-sep" />
+  <text x="79" y="142" class="traffic-label" text-anchor="middle">Git Clones</text>
+  <text x="79" y="164" class="traffic-value" text-anchor="middle">0</text>
+  <text x="190" y="142" class="traffic-label" text-anchor="middle">Unique Cloners</text>
+  <text x="190" y="164" class="traffic-value" text-anchor="middle">0</text>
+  <text x="301" y="142" class="traffic-label" text-anchor="middle">Total Views</text>
+  <text x="301" y="164" class="traffic-value" text-anchor="middle">0</text>
+  <text x="412" y="142" class="traffic-label" text-anchor="middle">Unique Visitors</text>
+  <text x="412" y="164" class="traffic-value" text-anchor="middle">0</text>
+  <text x="24" y="223" class="hint">Traffic since 2026-02-21 (last 2026-03-06)</text>
+  <circle cx="28" cy="196" r="5" fill="#178600" />
+  <text x="40" y="200" class="meta">C#</text>
+  <text x="144" y="200" class="meta">★ 0</text>
+  <text x="208" y="200" class="meta">⑂ 0</text>
+  <text x="24" y="214" class="sub">ochtum/GitHubReadmeStats</text>
+  <rect x="413" y="203" width="58" height="15" rx="7" fill="#0F766E" stroke="#F8FAFC" />
+  <text x="442" y="213" class="badge-text" fill="#CCFBF1">PUBLIC</text>
+</svg>
+

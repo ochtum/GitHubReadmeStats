@@ -31,6 +31,8 @@ For real-world usage, we recommend calling this tool from GitHub Actions in each
 
 ### SVG Outputs Explained
 
+Theme gallery: [theme-sample.md](./theme-sample.md)
+
 - `top-languages.svg`: A card that visualizes top N language usage percentages for repositories owned by the user.
 - `github-stats.svg`: A summary card showing Stars / Commits (last year) / PRs / Issues / Contributed repositories and rank.
 - `stats.svg`: A profile stats card showing contribution trend graphs and profile metrics such as Public/Private/Forked repository counts.
@@ -76,15 +78,38 @@ Before running this in a profile repository, prepare the following.
 
 ## Quick Start (local)
 
+### 1. Install .NET SDK 10
+
+- Running `dotnet` requires the .NET SDK.
+- Windows:
+  - `winget install --id Microsoft.DotNet.SDK.10 --exact`
+  - Or use the official installer: https://dotnet.microsoft.com/download/dotnet/10.0
+- Linux / WSL:
+  - Official instructions: https://learn.microsoft.com/dotnet/core/install/linux
+- Verify installation: run `dotnet --version` and confirm it shows `10.x`
+
+### Linux / WSL (bash)
+
 ```bash
 export GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 
 dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
-  --output output/top-languages.svg \
+  --output output \
   --exclude-languages "html,css,dockerfile" \
   --top 6 \
-  --cards-config cards-config.json \
-  --cards-output-dir output
+  --cards-config cards-config.json
+```
+
+### Windows (PowerShell)
+
+```powershell
+$env:GH_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
+  --output output `
+  --exclude-languages "html,css,dockerfile" `
+  --top 6 `
+  --cards-config cards-config.json
 ```
 
 ### cards-config.json
@@ -94,6 +119,7 @@ When `--cards-config` is specified, `github-stats.svg`, `stats.svg`, `public-rep
 ```json
 {
   "username": "ochtum",
+  "theme": "indigo-night",
   "displayTimeZone": "Asia/Tokyo",
   "displayTimeZoneLabel": "JST",
   "languageColors": {
@@ -129,6 +155,8 @@ Notes:
 - `repositories[].languageColor`: Per-repository color override (used when `languageColors` does not apply)
 - `languageIcons`: Icon override per language name (applied when matching `PrimaryLanguage`)
 - `repositories[].languageIcon`: Per-repository language icon override (used when `languageIcons` does not apply)
+- `theme`: Built-in preset name for all cards. Supported values: `indigo-night` (default), `cobalt`, `ocean`, `teal`, `emerald`, `amber`, `coral`, `violet`, `graphite`, `sakura`, `rose-petal`, `lavender-mist`, `peach-cream`, `mint-bloom`, `neon-night`. `neon-night` reproduces the design used before `mainColor` was introduced
+- `mainColor`: Global main color for all cards (hex / `oklch(...)`). If `theme` is also specified, `theme` takes precedence. Backgrounds, borders, text, and icon/label colors are auto-adjusted (language colors are unchanged)
 - `repositories[].icon`: Repository icon setting (supports paths relative to `cards-config.json`, absolute paths, `https://...`, and `data:image/...`)
 - `displayTimeZone`: Time zone used for `updated` timestamps (defaults to `UTC`)
 - `displayTimeZoneLabel`: Display label (e.g., `JST`; when omitted, auto-determined as `UTC` / `UTC+09:00` / `Asia/Tokyo`, etc.)
@@ -136,7 +164,7 @@ Notes:
 ### CLI Options
 
 - `--github-token`, `-t`: GitHub token
-- `--output`, `-o`: Output path for language card SVG (default: `output/top-languages.svg`)
+- `--output`, `-o`: Output file path or output directory for language card SVG (default: `output` -> `output/top-languages.svg`). When `--cards-config` is enabled, stats/pin/public cards are generated under this parent directory
 - `--exclude-languages`, `-x`: CSV of excluded languages
 - `--top`: Number of top languages to show (`1..20`)
 - `--include-forks`: Include fork repositories in aggregation
@@ -146,7 +174,7 @@ Notes:
 - `--start-marker`: README section start marker
 - `--end-marker`: README section end marker
 - `--cards-config`: JSON config for stats/pin card generation
-- `--cards-output-dir`: Output directory for stats/pin/public totals cards (default: `output`)
+- `--cards-output-dir`: Compatibility override option. If omitted, parent directory of `--output` is used
 
 ## Setup for Profile Repository
 
@@ -193,11 +221,10 @@ jobs:
         run: |
           mkdir -p output output/pins
           dotnet run --project tools/github-readme-stats/src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj --configuration Release -- \
-            --output output/top-languages.svg \
+            --output output \
             --exclude-languages "${EXCLUDED_LANGUAGES}" \
             --top 6 \
-            --cards-config cards-config.json \
-            --cards-output-dir output
+            --cards-config cards-config.json
 
       - name: Commit and push if changed
         run: |
@@ -217,6 +244,7 @@ jobs:
 ```json
 {
   "username": "your-github-id",
+  "theme": "indigo-night",
   "repositories": [
     "your-github-id/your-repo-1",
     "your-github-id/your-repo-2",

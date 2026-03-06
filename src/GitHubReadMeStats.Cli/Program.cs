@@ -47,6 +47,7 @@ internal static class Program
                 cardsConfig = CardsConfigLoader.Load(options.CardsConfigPath!, repositoriesResult.ViewerLogin);
             }
             TimeDisplaySettings timeDisplay = ResolveTimeDisplaySettings(cardsConfig);
+            CardColorTheme? colorTheme = ResolveCardColorTheme(cardsConfig);
 
             AggregationResult aggregation = LanguageAggregator.Aggregate(repositoriesResult.Repositories, options);
             if (cardsConfig is not null)
@@ -61,7 +62,7 @@ internal static class Program
             }
 
             DateTimeOffset generatedAtUtc = DateTimeOffset.UtcNow;
-            string svg = SvgRenderer.Render(repositoriesResult.ViewerLogin, aggregation, options.Top, generatedAtUtc, timeDisplay);
+            string svg = SvgRenderer.Render(repositoriesResult.ViewerLogin, aggregation, options.Top, generatedAtUtc, timeDisplay, colorTheme);
 
             EnsureParentDirectory(options.OutputPath);
             await File.WriteAllTextAsync(options.OutputPath, svg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -80,7 +81,8 @@ internal static class Program
                     generatedAtUtc,
                     repositoriesResult,
                     cardsConfig!,
-                    timeDisplay);
+                    timeDisplay,
+                    colorTheme);
             }
 
             if (!string.IsNullOrWhiteSpace(options.UpdateReadmePath))
@@ -116,19 +118,20 @@ internal static class Program
         DateTimeOffset generatedAtUtc,
         ViewerRepositoriesResult repositoriesResult,
         CardsConfig config,
-        TimeDisplaySettings timeDisplay)
+        TimeDisplaySettings timeDisplay,
+        CardColorTheme? colorTheme)
     {
         string configPath = options.CardsConfigPath!;
         string configDirectory = Path.GetDirectoryName(Path.GetFullPath(configPath)) ?? Directory.GetCurrentDirectory();
 
         UserSummary summary = await graphqlClient.FetchUserSummaryAsync(config.Username);
-        string githubStatsSvg = GitHubStatsSummaryCardRenderer.Render(summary, generatedAtUtc, timeDisplay);
+        string githubStatsSvg = GitHubStatsSummaryCardRenderer.Render(summary, generatedAtUtc, timeDisplay, colorTheme);
         string githubStatsPath = Path.Combine(options.CardsOutputDir, "github-stats.svg");
         EnsureParentDirectory(githubStatsPath);
         await File.WriteAllTextAsync(githubStatsPath, githubStatsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         Console.WriteLine($"Generated: {githubStatsPath}");
 
-        string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc, timeDisplay);
+        string statsSvg = ProfileStatsCardRenderer.Render(summary, generatedAtUtc, timeDisplay, colorTheme);
         string statsPath = Path.Combine(options.CardsOutputDir, "stats.svg");
         EnsureParentDirectory(statsPath);
         await File.WriteAllTextAsync(statsPath, statsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -239,7 +242,7 @@ internal static class Program
             trafficSinceDate,
             trafficLastRecordedDate);
 
-        string totalsSvg = PublicRepositoriesTotalsCardRenderer.Render(totalsCardData, generatedAtUtc, timeDisplay);
+        string totalsSvg = PublicRepositoriesTotalsCardRenderer.Render(totalsCardData, generatedAtUtc, timeDisplay, colorTheme);
         string totalsPath = Path.Combine(options.CardsOutputDir, "public-repo-totals.svg");
         EnsureParentDirectory(totalsPath);
         await File.WriteAllTextAsync(totalsPath, totalsSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
@@ -284,7 +287,7 @@ internal static class Program
                 TrafficTotals = trafficTotals,
             };
 
-            string pinSvg = PinCardRenderer.Render(data);
+            string pinSvg = PinCardRenderer.Render(data, colorTheme);
             string pinPath = Path.Combine(pinOutputDir, $"{SanitizePathSegment(repo.Owner)}-{SanitizePathSegment(repo.Name)}.svg");
             await File.WriteAllTextAsync(pinPath, pinSvg + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
             generatedPinCount++;
@@ -321,6 +324,49 @@ internal static class Program
             : config.DisplayTimeZoneLabel.Trim();
 
         return new TimeDisplaySettings(timeZone, label);
+    }
+
+    private static CardColorTheme? ResolveCardColorTheme(CardsConfig? config)
+    {
+        if (config is null)
+        {
+            return null;
+        }
+
+        bool hasMainColor = !string.IsNullOrWhiteSpace(config.MainColor);
+        bool hasTheme = !string.IsNullOrWhiteSpace(config.Theme);
+
+        if (hasTheme || !hasMainColor)
+        {
+            string configuredTheme = hasTheme
+                ? config.Theme!
+                : CardColorThemeFactory.DefaultThemeName;
+            if (!CardColorThemeFactory.TryResolveTheme(configuredTheme, out _, out string? resolvedThemeColor, out bool useClassicFallbackPalette))
+            {
+                throw new InvalidOperationException(
+                    $"Invalid cards-config theme '{configuredTheme}'. Supported themes: {string.Join(", ", CardColorThemeFactory.BuiltInThemeNames)}.");
+            }
+
+            if (useClassicFallbackPalette)
+            {
+                return null;
+            }
+
+            return CardColorThemeFactory.Create(resolvedThemeColor!);
+        }
+
+        string resolvedMainColor = config.MainColor!;
+
+        try
+        {
+            return CardColorThemeFactory.Create(resolvedMainColor);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new InvalidOperationException(
+                $"Invalid cards-config mainColor '{config.MainColor}'. Use hex (#RGB/#RRGGBB/#RRGGBBAA) or oklch(...).",
+                ex);
+        }
     }
 
     private static bool TryResolveTimeZoneInfo(string value, out TimeZoneInfo timeZone)

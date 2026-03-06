@@ -5,7 +5,8 @@ internal static class CliParser
     public const string ApplicationName = "github-readme-stats";
     public const string ApplicationVersion = "0.1.0";
 
-    private const string DefaultOutputPath = "output/top-languages.svg";
+    private const string DefaultOutputPath = "output";
+    private const string DefaultLanguageCardFileName = "top-languages.svg";
     private const int DefaultTopCount = 6;
     private const string DefaultStartMarker = "<!-- github-readme-stats:start -->";
     private const string DefaultEndMarker = "<!-- github-readme-stats:end -->";
@@ -23,7 +24,7 @@ internal static class CliParser
         string endMarker = DefaultEndMarker;
         string? imagePathForReadme = null;
         string? cardsConfigPath = null;
-        string cardsOutputDir = "output";
+        string? cardsOutputDir = null;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -230,6 +231,8 @@ internal static class CliParser
             return new CliParseResult(null, "--output requires a non-empty value.", false, false);
         }
 
+        string resolvedOutputPath = ResolveOutputPath(outputPath);
+
         if (string.IsNullOrWhiteSpace(startMarker) || string.IsNullOrWhiteSpace(endMarker))
         {
             return new CliParseResult(null, "--start-marker and --end-marker require non-empty values.", false, false);
@@ -245,10 +248,14 @@ internal static class CliParser
             cardsConfigPath = null;
         }
 
-        if (string.IsNullOrWhiteSpace(cardsOutputDir))
+        if (cardsOutputDir is not null && string.IsNullOrWhiteSpace(cardsOutputDir))
         {
             return new CliParseResult(null, "--cards-output-dir requires a non-empty value.", false, false);
         }
+
+        string resolvedCardsOutputDir = string.IsNullOrWhiteSpace(cardsOutputDir)
+            ? ResolveCardsOutputDir(resolvedOutputPath)
+            : cardsOutputDir!;
 
         token = token?.Trim();
         token ??= Environment.GetEnvironmentVariable("GH_TOKEN")?.Trim();
@@ -264,7 +271,7 @@ internal static class CliParser
 
         var options = new CliOptions(
             resolvedToken,
-            outputPath,
+            resolvedOutputPath,
             excludedLanguageList,
             top,
             includeForks,
@@ -274,7 +281,7 @@ internal static class CliParser
             endMarker,
             imagePathForReadme,
             cardsConfigPath,
-            cardsOutputDir);
+            resolvedCardsOutputDir);
 
         return new CliParseResult(options, null, false, false);
     }
@@ -291,7 +298,7 @@ internal static class CliParser
             "  -h, --help                      Show help\n" +
             "  -v, --version                   Show version\n" +
             "  -t, --github-token <token>      GitHub PAT (or GH_TOKEN / GITHUB_TOKEN env)\n" +
-            "  -o, --output <path>             SVG output path (default: output/top-languages.svg)\n" +
+            "  -o, --output <path>             Language card output path or directory (default: output -> output/top-languages.svg)\n" +
             "  -x, --exclude-languages <csv>   Exclude language names (default: EXCLUDED_LANGUAGES env)\n" +
             "      --top <n>                   Number of languages to render (1-20, default: 6)\n" +
             "      --include-forks             Include fork repositories\n" +
@@ -301,7 +308,7 @@ internal static class CliParser
             "      --start-marker <marker>     README section start marker\n" +
             "      --end-marker <marker>       README section end marker\n" +
             "      --cards-config <path>       JSON config for stats/pin card generation\n" +
-            "      --cards-output-dir <path>   Output directory for generated cards (default: output)\n";
+            "      --cards-output-dir <path>   (Compatibility) Override cards output directory\n";
     }
 
     private static bool TryParseInlineValue(string arg, string optionName, out string value)
@@ -315,6 +322,33 @@ internal static class CliParser
 
         value = string.Empty;
         return false;
+    }
+
+    private static string ResolveCardsOutputDir(string outputPath)
+    {
+        string? parentDirectory = Path.GetDirectoryName(outputPath);
+        return string.IsNullOrWhiteSpace(parentDirectory) ? "." : parentDirectory;
+    }
+
+    private static string ResolveOutputPath(string outputPath)
+    {
+        string trimmed = outputPath.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return trimmed;
+        }
+
+        bool looksLikeDirectory =
+            trimmed.EndsWith(Path.DirectorySeparatorChar) ||
+            trimmed.EndsWith(Path.AltDirectorySeparatorChar) ||
+            !Path.HasExtension(trimmed);
+
+        if (looksLikeDirectory)
+        {
+            return Path.Combine(trimmed, DefaultLanguageCardFileName);
+        }
+
+        return trimmed;
     }
 
     private static string? ReadNextValue(string[] args, ref int index)

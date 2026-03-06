@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="260" viewBox="0 0 640 260" role="img" aria-label="Public repository totals for ochtum">
+  <defs>
+    <linearGradient id="totals-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#92400E" />
+      <stop offset="100%" stop-color="#753714" />
+    </linearGradient>
+    <style>
+      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .sub { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .section { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .metric-label { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .metric-value { font: 700 20px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; font-variant-numeric: tabular-nums; }
+      .summary-label { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+      .summary-value { font: 700 23px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; font-variant-numeric: tabular-nums; }
+      .hint { font: 500 10px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="640" height="260" rx="18" fill="url(#totals-bg)" />
+  <rect x="1" y="1" width="638" height="258" rx="17" fill="none" stroke="#C88055" />
+  <text x="24" y="42" class="title">Public Repository Totals</text>
+  <text x="24" y="66" class="sub">@ochtum | 21 public repos</text>
+  <rect x="24" y="82" width="592" height="80" rx="10" fill="#92532D" fill-opacity="0.62" stroke="#E59D72" stroke-opacity="0.68" />
+  <text x="36" y="99" class="section">Traffic</text>
+  <text x="98" y="116" class="metric-label" text-anchor="middle">Git Clones</text>
+  <text x="98" y="140" class="metric-value" text-anchor="middle">716</text>
+  <line x1="172" y1="103" x2="172" y2="152" stroke="#A96136" stroke-opacity="0.45" />
+  <text x="246" y="116" class="metric-label" text-anchor="middle">Unique Cloners</text>
+  <text x="246" y="140" class="metric-value" text-anchor="middle">489</text>
+  <line x1="320" y1="103" x2="320" y2="152" stroke="#A96136" stroke-opacity="0.45" />
+  <text x="394" y="116" class="metric-label" text-anchor="middle">Total Views</text>
+  <text x="394" y="140" class="metric-value" text-anchor="middle">449</text>
+  <line x1="468" y1="103" x2="468" y2="152" stroke="#A96136" stroke-opacity="0.45" />
+  <text x="542" y="116" class="metric-label" text-anchor="middle">Unique Visitors</text>
+  <text x="542" y="140" class="metric-value" text-anchor="middle">44</text>
+  <text x="36" y="156" class="hint">Traffic covers 21/21 repos since 2026-02-11 (last 2026-03-06)</text>
+  <rect x="24" y="170" width="592" height="62" rx="10" fill="#995E3B" fill-opacity="0.70" stroke="#BC7449" stroke-opacity="0.68" />
+  <text x="36" y="188" class="section">Repository Signals</text>
+  <text x="122.67" y="204" class="summary-label" text-anchor="middle">Fork</text>
+  <text x="122.67" y="228" class="summary-value" text-anchor="middle">1</text>
+  <line x1="221.33" y1="187" x2="221.33" y2="224" stroke="#A96136" stroke-opacity="0.45" />
+  <text x="320" y="204" class="summary-label" text-anchor="middle">Watch</text>
+  <text x="320" y="228" class="summary-value" text-anchor="middle">10</text>
+  <line x1="418.67" y1="187" x2="418.67" y2="224" stroke="#A96136" stroke-opacity="0.45" />
+  <text x="517.33" y="204" class="summary-label" text-anchor="middle">Starred</text>
+  <text x="517.33" y="228" class="summary-value" text-anchor="middle">5</text>
+  <text x="24" y="248" class="hint">Updated 2026-03-06 15:33 JST</text>
+</svg>
+

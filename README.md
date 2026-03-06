@@ -39,6 +39,8 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 ### SVGサンプル
 
+テーマ別サンプル一覧: [theme-sample.md](./theme-sample.md)
+
 以下は実際の出力例です（`ochtum/ochtum` の `output` を参照）。
 
 #### `top-languages.svg`
@@ -102,15 +104,38 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 ## Quick Start (local)
 
+### 1. .NET SDK 10 をインストール
+
+- `dotnet` コマンドの実行には .NET SDK が必要です。
+- Windows:
+  - `winget install --id Microsoft.DotNet.SDK.10 --exact`
+  - または公式インストーラー: https://dotnet.microsoft.com/download/dotnet/10.0
+- Linux / WSL:
+  - 公式手順: https://learn.microsoft.com/dotnet/core/install/linux
+- インストール確認: `dotnet --version` を実行し、`10.x` が表示されることを確認
+
+### Linux / WSL (bash)
+
 ```bash
 export GH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 
 dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
-  --output output/top-languages.svg \
+  --output output \
   --exclude-languages "html,css,dockerfile" \
   --top 6 \
-  --cards-config cards-config.json \
-  --cards-output-dir output
+  --cards-config cards-config.json
+```
+
+### Windows (PowerShell)
+
+```powershell
+$env:GH_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+
+dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
+  --output output `
+  --exclude-languages "html,css,dockerfile" `
+  --top 6 `
+  --cards-config cards-config.json
 ```
 
 ### cards-config.json
@@ -120,6 +145,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 ```json
 {
   "username": "ochtum",
+  "theme": "indigo-night",
   "displayTimeZone": "Asia/Tokyo",
   "displayTimeZoneLabel": "JST",
   "languageColors": {
@@ -155,6 +181,8 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `repositories[].languageColor`: そのリポジトリだけの色上書き（`languageColors` がない場合に適用）
 - `languageIcons`: 言語名単位のアイコン上書き（`PrimaryLanguage` に一致したとき適用）
 - `repositories[].languageIcon`: そのリポジトリだけの言語アイコン上書き（`languageIcons` がない場合に適用）
+- `theme`: 全カード共通のプリセットテーマ名。`indigo-night` (既定), `cobalt`, `ocean`, `teal`, `emerald`, `amber`, `coral`, `violet`, `graphite`, `sakura`, `rose-petal`, `lavender-mist`, `peach-cream`, `mint-bloom`, `neon-night` をサポート。`neon-night` は `mainColor` 導入前デザインを再現
+- `mainColor`: 全カード共通のメインカラー（hex / `oklch(...)`）。`theme` が同時指定されている場合は `theme` を優先。背景・罫線・文字・アイコン/ラベル色を自動調整（言語カラーは対象外）
 - `repositories[].icon`: アイコン指定（`cards-config.json` からの相対パス、絶対パス、`https://...`、`data:image/...` をサポート）
 - `displayTimeZone`: `updated` 表示時刻のタイムゾーン（未指定時は `UTC`）
 - `displayTimeZoneLabel`: 表示ラベル（例: `JST`。未指定時は `UTC` / `UTC+09:00` / `Asia/Tokyo` などを自動決定）
@@ -162,7 +190,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 ### CLI Options
 
 - `--github-token`, `-t`: GitHub token
-- `--output`, `-o`: 言語カード SVG の出力先 (default: `output/top-languages.svg`)
+- `--output`, `-o`: 言語カード SVG の出力先ファイルまたは出力先ディレクトリ (default: `output` -> `output/top-languages.svg`)。`--cards-config` 使用時、stats/pin/public もこの親ディレクトリ配下に出力
 - `--exclude-languages`, `-x`: 除外言語 CSV
 - `--top`: 表示する上位言語数 (`1..20`)
 - `--include-forks`: fork を集計対象に含める
@@ -172,7 +200,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- \
 - `--start-marker`: README セクション開始マーカー
 - `--end-marker`: README セクション終了マーカー
 - `--cards-config`: stats/pin カード生成設定 JSON
-- `--cards-output-dir`: stats/pin/public 合計カードの出力先ディレクトリ (default: `output`)
+- `--cards-output-dir`: 互換用の上書きオプション。未指定時は `--output` の親ディレクトリを使用
 
 ## プロフィールリポジトリでの導入手順
 
@@ -219,11 +247,10 @@ jobs:
         run: |
           mkdir -p output output/pins
           dotnet run --project tools/github-readme-stats/src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj --configuration Release -- \
-            --output output/top-languages.svg \
+            --output output \
             --exclude-languages "${EXCLUDED_LANGUAGES}" \
             --top 6 \
-            --cards-config cards-config.json \
-            --cards-output-dir output
+            --cards-config cards-config.json
 
       - name: Commit and push if changed
         run: |
@@ -243,6 +270,7 @@ jobs:
 ```json
 {
   "username": "your-github-id",
+  "theme": "indigo-night",
   "repositories": [
     "your-github-id/your-repo-1",
     "your-github-id/your-repo-2",

@@ -36,11 +36,10 @@ jobs:
         run: |
           mkdir -p output output/pins
           dotnet run --project tools/github-readme-stats/src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj --configuration Release -- \
-            --output output/top-languages.svg \
+            --output output \
             --exclude-languages "${EXCLUDED_LANGUAGES}" \
             --top 6 \
-            --cards-config cards-config.json \
-            --cards-output-dir output
+            --cards-config cards-config.json
 
       - name: Commit and push if changed
         run: |

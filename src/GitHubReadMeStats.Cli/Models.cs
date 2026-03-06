@@ -297,6 +297,8 @@ internal sealed record CardsConfig(
     IReadOnlyList<PinRepository> Repositories,
     IReadOnlyDictionary<string, string> LanguageColorOverrides,
     IReadOnlyDictionary<string, string> LanguageIconOverrides,
+    string? MainColor,
+    string? Theme,
     string? DisplayTimeZone,
     string? DisplayTimeZoneLabel);
 

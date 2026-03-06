@@ -15,7 +15,8 @@ internal static class SvgRenderer
         AggregationResult aggregation,
         int topCount,
         DateTimeOffset generatedAtUtc,
-        TimeDisplaySettings timeDisplay)
+        TimeDisplaySettings timeDisplay,
+        CardColorTheme? colorTheme = null)
     {
         IReadOnlyList<AggregatedLanguage> topLanguages = aggregation.Languages.Take(topCount).ToList();
         DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
@@ -41,25 +42,33 @@ internal static class SvgRenderer
         int chartX = horizontalPadding;
         int chartWidth = width - (horizontalPadding * 2);
 
+        string backgroundStart = colorTheme?.BackgroundStart ?? "#0F172A";
+        string backgroundEnd = colorTheme?.BackgroundEnd ?? "#111827";
+        string borderColor = colorTheme?.Border ?? "#1E293B";
+        string titleColor = colorTheme?.PrimaryText ?? "#F8FAFC";
+        string subColor = colorTheme?.SecondaryText ?? "#CBD5E1";
+        string mutedColor = colorTheme?.MutedText ?? "#94A3B8";
+        string trackColor = colorTheme?.TrackFill ?? TrackColor;
+
         var sb = new StringBuilder();
 
         sb.AppendLine($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\" role=\"img\" aria-label=\"GitHub readme language stats\">");
         sb.AppendLine("  <defs>");
         sb.AppendLine("    <linearGradient id=\"card-bg\" x1=\"0\" x2=\"1\" y1=\"0\" y2=\"1\">");
-        sb.AppendLine("      <stop offset=\"0%\" stop-color=\"#0F172A\" />");
-        sb.AppendLine("      <stop offset=\"100%\" stop-color=\"#111827\" />");
+        sb.AppendLine($"      <stop offset=\"0%\" stop-color=\"{EscapeXml(backgroundStart)}\" />");
+        sb.AppendLine($"      <stop offset=\"100%\" stop-color=\"{EscapeXml(backgroundEnd)}\" />");
         sb.AppendLine("    </linearGradient>");
         sb.AppendLine("    <style>");
-        sb.AppendLine("      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }");
-        sb.AppendLine("      .sub { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #CBD5E1; }");
+        sb.AppendLine($"      .title {{ font: 700 24px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(titleColor)}; }}");
+        sb.AppendLine($"      .sub {{ font: 500 14px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(subColor)}; }}");
         sb.AppendLine("      .label { font: 600 13px 'Segoe UI', Arial, sans-serif; }");
         sb.AppendLine("      .value { font: 600 12px 'Segoe UI', Arial, sans-serif; }");
-        sb.AppendLine("      .muted { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #94A3B8; }");
+        sb.AppendLine($"      .muted {{ font: 500 12px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(mutedColor)}; }}");
         sb.AppendLine("    </style>");
         sb.AppendLine("  </defs>");
 
         sb.AppendLine($"  <rect x=\"0\" y=\"0\" width=\"{width}\" height=\"{height}\" rx=\"18\" fill=\"url(#card-bg)\" />");
-        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"#1E293B\" />");
+        sb.AppendLine($"  <rect x=\"1\" y=\"1\" width=\"{width - 2}\" height=\"{height - 2}\" rx=\"17\" fill=\"none\" stroke=\"{EscapeXml(borderColor)}\" />");
 
         sb.AppendLine($"  <text x=\"{horizontalPadding}\" y=\"{titleY}\" class=\"title\">Most Used Languages</text>");
         sb.AppendLine($"  <text x=\"{horizontalPadding}\" y=\"{subtitleY}\" class=\"sub\">@{EscapeXml(viewerLogin)} | {aggregation.IncludedRepositoryCount} repos | updated {generatedAtLocal:yyyy-MM-dd HH:mm} {EscapeXml(timeDisplay.Label)}</text>");
@@ -76,14 +85,14 @@ internal static class SvgRenderer
                 barWidth = 4;
             }
 
-            sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{barY}\" width=\"{chartWidth}\" height=\"{barHeight}\" rx=\"10\" fill=\"{TrackColor}\" />");
+            sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{barY}\" width=\"{chartWidth}\" height=\"{barHeight}\" rx=\"10\" fill=\"{trackColor}\" />");
             if (barWidth > 0)
             {
                 sb.AppendLine($"  <rect x=\"{chartX}\" y=\"{barY}\" width=\"{barWidth.ToString("0.##", CultureInfo.InvariantCulture)}\" height=\"{barHeight}\" rx=\"10\" fill=\"{EscapeXml(language.Color)}\" />");
             }
 
-            string labelBackgroundColor = barWidth >= 12 ? language.Color : TrackColor;
-            string valueBackgroundColor = barWidth >= (chartWidth - 8) ? language.Color : TrackColor;
+            string labelBackgroundColor = barWidth >= 12 ? language.Color : trackColor;
+            string valueBackgroundColor = barWidth >= (chartWidth - 8) ? language.Color : trackColor;
             string labelColor = GetAccessibleTextColor(labelBackgroundColor);
             string valueColor = GetAccessibleTextColor(valueBackgroundColor);
 
