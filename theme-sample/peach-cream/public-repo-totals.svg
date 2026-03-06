@@ -5,7 +5,7 @@
       <stop offset="100%" stop-color="#BA4A13" />
     </linearGradient>
     <style>
-      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #0F172A; }
+      .title { font: 700 24px 'Segoe UI', Arial, sans-serif; fill: #FFDBC8; }
       .sub { font: 500 14px 'Segoe UI', Arial, sans-serif; fill: #0F172A; }
       .section { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
       .metric-label { font: 600 10px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }

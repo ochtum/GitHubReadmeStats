@@ -45,7 +45,7 @@ internal static class SvgRenderer
         string backgroundStart = colorTheme?.BackgroundStart ?? "#0F172A";
         string backgroundEnd = colorTheme?.BackgroundEnd ?? "#111827";
         string borderColor = colorTheme?.Border ?? "#1E293B";
-        string titleColor = colorTheme?.PrimaryText ?? "#F8FAFC";
+        string titleColor = colorTheme?.TitleText ?? "#F8FAFC";
         string subColor = colorTheme?.SecondaryText ?? "#CBD5E1";
         string mutedColor = colorTheme?.MutedText ?? "#94A3B8";
         string trackColor = colorTheme?.TrackFill ?? TrackColor;

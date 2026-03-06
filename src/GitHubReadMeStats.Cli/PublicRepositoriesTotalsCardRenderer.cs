@@ -26,7 +26,7 @@ internal static class PublicRepositoriesTotalsCardRenderer
         string backgroundStart = colorTheme?.BackgroundStart ?? "#0D1B33";
         string backgroundEnd = colorTheme?.BackgroundEnd ?? "#0B132A";
         string borderColor = colorTheme?.Border ?? "#1E3A8A";
-        string titleColor = colorTheme?.PrimaryText ?? "#F8FAFC";
+        string titleColor = colorTheme?.TitleText ?? "#F8FAFC";
         string subColor = colorTheme?.SecondaryText ?? "#BFDBFE";
         string sectionColor = colorTheme?.AccentSoft ?? "#93C5FD";
         string metricLabelColor = colorTheme?.SecondaryText ?? "#93C5FD";
