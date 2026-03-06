@@ -63,6 +63,7 @@ internal static class PinCardRenderer
         sb.AppendLine($"      .traffic-label {{ font: 600 9px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(trafficLabelColor)}; }}");
         sb.AppendLine($"      .traffic-value {{ font: 700 17px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(trafficValueColor)}; }}");
         sb.AppendLine($"      .meta {{ font: 600 12px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(metaColor)}; }}");
+        sb.AppendLine($"      .fork-icon {{ font: 700 14px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(metaColor)}; }}");
         sb.AppendLine($"      .sub {{ font: 500 11px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(subColor)}; }}");
         sb.AppendLine("      .badge-text { font: 700 9px 'Segoe UI', Arial, sans-serif; text-anchor: middle; }");
         sb.AppendLine($"      .hint {{ font: 500 10px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(hintColor)}; }}");
@@ -149,7 +150,7 @@ internal static class PinCardRenderer
 
         sb.AppendLine($"  <text x=\"40\" y=\"{metaY}\" class=\"meta\">{EscapeXml(language)}</text>");
         sb.AppendLine($"  <text x=\"{starX}\" y=\"{metaY}\" class=\"meta\">★ {repository.Stars.ToString("N0", CultureInfo.InvariantCulture)}</text>");
-        sb.AppendLine($"  <text x=\"{forkX}\" y=\"{metaY}\" class=\"meta\">⑂ {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
+        sb.AppendLine($"  <text x=\"{forkX}\" y=\"{metaY}\" class=\"meta\"><tspan class=\"fork-icon\">⑂</tspan> {repository.Forks.ToString("N0", CultureInfo.InvariantCulture)}</text>");
 
         string repositoryPath = $"{repository.Owner}/{repository.Name}";
         string badgeLabel = repository.IsPrivate ? "PRIVATE" : repository.IsArchived ? "ARCHIVED" : "PUBLIC";

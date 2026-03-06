@@ -30,7 +30,7 @@ internal static class GitHubStatsSummaryCardRenderer
         string backgroundEnd = colorTheme?.BackgroundEnd ?? "#100B2F";
         string borderColor = colorTheme?.Border ?? "#334155";
         string titleColor = colorTheme?.TitleText ?? "#F43F93";
-        string labelColor = colorTheme?.SecondaryText ?? "#67E8F9";
+        string labelColor = colorTheme?.PrimaryText ?? "#7DD3FC";
         string valueColor = colorTheme?.PrimaryText ?? "#A7F3D0";
         string iconColor = colorTheme?.Accent ?? "#FACC15";
         string gradeColor = colorTheme?.AccentStrong ?? "#67E8F9";
@@ -51,6 +51,7 @@ internal static class GitHubStatsSummaryCardRenderer
         sb.AppendLine($"      .label {{ font: 700 12px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(labelColor)}; }}");
         sb.AppendLine($"      .value {{ font: 700 22px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(valueColor)}; font-variant-numeric: tabular-nums; }}");
         sb.AppendLine($"      .icon {{ font: 700 13px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(iconColor)}; }}");
+        sb.AppendLine($"      .icon-pr {{ font: 700 15px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(iconColor)}; }}");
         sb.AppendLine($"      .grade {{ font: 700 46px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(gradeColor)}; }}");
         sb.AppendLine($"      .grade-wide {{ font: 700 34px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(gradeColor)}; }}");
         sb.AppendLine($"      .score {{ font: 600 11px 'Segoe UI', Arial, sans-serif; fill: {EscapeXml(scoreColor)}; font-variant-numeric: tabular-nums; }}");
@@ -64,7 +65,7 @@ internal static class GitHubStatsSummaryCardRenderer
 
         AppendMetricRow(sb, 24, 63, "☆", "Total Stars Earned:", summary.TotalStarsEarned);
         AppendMetricRow(sb, 24, 91, "◔", "Total Commits (last year):", summary.TotalCommitsLastYear);
-        AppendMetricRow(sb, 24, 119, "⑂", "Total PRs:", summary.TotalPullRequestsLastYear);
+        AppendMetricRow(sb, 24, 119, "⑂", "Total PRs:", summary.TotalPullRequestsLastYear, iconClass: "icon-pr");
         AppendMetricRow(sb, 24, 147, "◍", "Total Issues:", summary.TotalIssuesLastYear);
         AppendMetricRow(sb, 24, 175, "▣", "Contributed to (last year):", summary.ContributedToRepositoriesLastYear);
 
@@ -85,9 +86,9 @@ internal static class GitHubStatsSummaryCardRenderer
         return sb.ToString();
     }
 
-    private static void AppendMetricRow(StringBuilder sb, int x, int y, string icon, string label, int value)
+    private static void AppendMetricRow(StringBuilder sb, int x, int y, string icon, string label, int value, string iconClass = "icon")
     {
-        sb.AppendLine($"  <text x=\"{x}\" y=\"{y}\" class=\"icon\">{EscapeXml(icon)}</text>");
+        sb.AppendLine($"  <text x=\"{x}\" y=\"{y}\" class=\"{EscapeXml(iconClass)}\">{EscapeXml(icon)}</text>");
         sb.AppendLine($"  <text x=\"{x + 18}\" y=\"{y}\" class=\"label\">{EscapeXml(label)}</text>");
         sb.AppendLine($"  <text x=\"284\" y=\"{y}\" class=\"value\" text-anchor=\"end\">{value.ToString("N0", CultureInfo.InvariantCulture)}</text>");
     }

@@ -6,9 +6,10 @@
     </linearGradient>
     <style>
       .title { font: 700 28px 'Segoe UI', Arial, sans-serif; fill: #53F3E8; }
-      .label { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #B7D2D2; }
+      .label { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; }
       .value { font: 700 22px 'Segoe UI', Arial, sans-serif; fill: #F8FAFC; font-variant-numeric: tabular-nums; }
       .icon { font: 700 13px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: #2FE4D7; }
+      .icon-pr { font: 700 15px 'Segoe UI Symbol', 'Segoe UI', Arial, sans-serif; fill: #2FE4D7; }
       .grade { font: 700 46px 'Segoe UI', Arial, sans-serif; fill: #53F3E8; }
       .grade-wide { font: 700 34px 'Segoe UI', Arial, sans-serif; fill: #53F3E8; }
       .score { font: 600 11px 'Segoe UI', Arial, sans-serif; fill: #96BEBD; font-variant-numeric: tabular-nums; }
@@ -24,7 +25,7 @@
   <text x="24" y="91" class="icon">◔</text>
   <text x="42" y="91" class="label">Total Commits (last year):</text>
   <text x="284" y="91" class="value" text-anchor="end">206</text>
-  <text x="24" y="119" class="icon">⑂</text>
+  <text x="24" y="119" class="icon-pr">⑂</text>
   <text x="42" y="119" class="label">Total PRs:</text>
   <text x="284" y="119" class="value" text-anchor="end">10</text>
   <text x="24" y="147" class="icon">◍</text>
