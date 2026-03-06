@@ -16,10 +16,6 @@ internal sealed record CliOptions(
     string OwnPinsSectionEndMarker,
     string ExternalPinsSectionStartMarker,
     string ExternalPinsSectionEndMarker,
-    string? TopLanguagesImagePathForReadme,
-    string? StatsImagePathForReadme,
-    string? PublicRepoTotalsImagePathForReadme,
-    string? GitHubStatsImagePathForReadme,
     int PinsColumnsForReadme,
     string? CardsConfigPath,
     string CardsOutputDir);

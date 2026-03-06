@@ -34,10 +34,6 @@ internal static class CliParser
         string ownPinsEndMarker = DefaultOwnPinsEndMarker;
         string externalPinsStartMarker = DefaultExternalPinsStartMarker;
         string externalPinsEndMarker = DefaultExternalPinsEndMarker;
-        string? topLanguagesImagePathForReadme = null;
-        string? statsImagePathForReadme = null;
-        string? publicRepoTotalsImagePathForReadme = null;
-        string? githubStatsImagePathForReadme = null;
         int pinsColumnsForReadme = 2;
         string? cardsConfigPath = null;
         string? cardsOutputDir = null;
@@ -87,30 +83,6 @@ internal static class CliParser
             if (TryParseInlineValue(arg, "--update-readme", out string updateReadmeValue))
             {
                 updateReadmePath = updateReadmeValue;
-                continue;
-            }
-
-            if (TryParseInlineValue(arg, "--top-languages-image-path", out string topLanguagesImagePathValue))
-            {
-                topLanguagesImagePathForReadme = topLanguagesImagePathValue;
-                continue;
-            }
-
-            if (TryParseInlineValue(arg, "--stats-image-path", out string statsImagePathValue))
-            {
-                statsImagePathForReadme = statsImagePathValue;
-                continue;
-            }
-
-            if (TryParseInlineValue(arg, "--public-repo-totals-image-path", out string publicRepoTotalsImagePathValue))
-            {
-                publicRepoTotalsImagePathForReadme = publicRepoTotalsImagePathValue;
-                continue;
-            }
-
-            if (TryParseInlineValue(arg, "--github-stats-image-path", out string githubStatsImagePathValue))
-            {
-                githubStatsImagePathForReadme = githubStatsImagePathValue;
                 continue;
             }
 
@@ -245,42 +217,6 @@ internal static class CliParser
                 case "--update-readme":
                     updateReadmePath = ReadNextValue(args, ref i);
                     if (updateReadmePath is null)
-                    {
-                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
-                    }
-
-                    break;
-
-                case "--top-languages-image-path":
-                    topLanguagesImagePathForReadme = ReadNextValue(args, ref i);
-                    if (topLanguagesImagePathForReadme is null)
-                    {
-                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
-                    }
-
-                    break;
-
-                case "--stats-image-path":
-                    statsImagePathForReadme = ReadNextValue(args, ref i);
-                    if (statsImagePathForReadme is null)
-                    {
-                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
-                    }
-
-                    break;
-
-                case "--public-repo-totals-image-path":
-                    publicRepoTotalsImagePathForReadme = ReadNextValue(args, ref i);
-                    if (publicRepoTotalsImagePathForReadme is null)
-                    {
-                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
-                    }
-
-                    break;
-
-                case "--github-stats-image-path":
-                    githubStatsImagePathForReadme = ReadNextValue(args, ref i);
-                    if (githubStatsImagePathForReadme is null)
                     {
                         return new CliParseResult(null, $"{arg} requires a value.", false, false);
                     }
@@ -477,10 +413,6 @@ internal static class CliParser
             ownPinsEndMarker,
             externalPinsStartMarker,
             externalPinsEndMarker,
-            topLanguagesImagePathForReadme,
-            statsImagePathForReadme,
-            publicRepoTotalsImagePathForReadme,
-            githubStatsImagePathForReadme,
             pinsColumnsForReadme,
             cardsConfigPath,
             resolvedCardsOutputDir);
@@ -506,10 +438,6 @@ internal static class CliParser
             "      --include-forks             Include fork repositories\n" +
             "      --include-archived          Include archived repositories\n" +
             "      --update-readme <path>      Update markdown section in README\n" +
-            "      --top-languages-image-path <path>  Top-languages image path used in README markdown\n" +
-            "      --stats-image-path <path>   stats.svg path used in README markdown\n" +
-            "      --public-repo-totals-image-path <path> public-repo-totals.svg path used in README markdown\n" +
-            "      --github-stats-image-path <path> github-stats.svg path used in README markdown\n" +
             "      --pins-columns <1|2>        Pin card columns in README markdown (default: 2)\n" +
             "      --top-languages-start-marker <marker> top-languages section start marker\n" +
             "      --top-languages-end-marker <marker> top-languages section end marker\n" +

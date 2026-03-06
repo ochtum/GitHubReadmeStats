@@ -190,10 +190,6 @@ Notes:
 - `--include-forks`: Include fork repositories in aggregation
 - `--include-archived`: Include archived repositories in aggregation
 - `--update-readme`: Path of README to update
-- `--top-languages-image-path`: `top-languages.svg` image path embedded in README
-- `--stats-image-path`: `stats.svg` image path embedded in README
-- `--public-repo-totals-image-path`: `public-repo-totals.svg` image path embedded in README
-- `--github-stats-image-path`: `github-stats.svg` image path embedded in README
 - `--pins-columns`: Pin card columns in README (`1` or `2`, default: `2`)
 - `--top-languages-start-marker`: Top Languages section start marker
 - `--top-languages-end-marker`: Top Languages section end marker
@@ -208,6 +204,7 @@ Notes:
 
 `--update-readme` updates each section only when its start/end markers already exist in README.  
 If markers are missing, that section is skipped and no new section is appended.
+Image paths are auto-resolved and use default file names under `--output` / `--cards-output-dir` (`top-languages.svg`, `stats.svg`, `public-repo-totals.svg`, `github-stats.svg`, `pins/*.svg`).
 
 ## Setup for Profile Repository
 

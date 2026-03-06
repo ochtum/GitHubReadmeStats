@@ -215,10 +215,6 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 - `--include-forks`: fork を集計対象に含める
 - `--include-archived`: archived を集計対象に含める
 - `--update-readme`: README 更新対象パス
-- `--top-languages-image-path`: README に埋め込む `top-languages.svg` 画像パス
-- `--stats-image-path`: README に埋め込む `stats.svg` 画像パス
-- `--public-repo-totals-image-path`: README に埋め込む `public-repo-totals.svg` 画像パス
-- `--github-stats-image-path`: README に埋め込む `github-stats.svg` 画像パス
 - `--pins-columns`: README の pins 表示列数 (`1` or `2`, default: `2`)
 - `--top-languages-start-marker`: Top Languages セクション開始マーカー
 - `--top-languages-end-marker`: Top Languages セクション終了マーカー
@@ -233,6 +229,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 
 `--update-readme` は各セクションの start/end マーカーが README に存在する場合のみ更新します。  
 マーカーが見つからないセクションは追記せず、そのセクションのみスキップします。
+画像パスは自動解決され、`--output` / `--cards-output-dir` 配下の既定ファイル名（`top-languages.svg`, `stats.svg`, `public-repo-totals.svg`, `github-stats.svg`, `pins/*.svg`）を使用します。
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 

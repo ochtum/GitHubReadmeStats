@@ -574,17 +574,14 @@ internal static class Program
 
     private static ReadmeImagePaths ResolveReadmeImagePaths(CliOptions options, string readmePath)
     {
-        string topLanguagesPath = ResolveRequiredReadmeImagePath(options.TopLanguagesImagePathForReadme, readmePath, options.OutputPath);
+        string topLanguagesPath = ResolveRequiredReadmeImagePath(readmePath, options.OutputPath);
         string? statsPath = ResolveOptionalReadmeImagePath(
-            options.StatsImagePathForReadme,
             readmePath,
             Path.Combine(options.CardsOutputDir, "stats.svg"));
         string? publicRepoTotalsPath = ResolveOptionalReadmeImagePath(
-            options.PublicRepoTotalsImagePathForReadme,
             readmePath,
             Path.Combine(options.CardsOutputDir, "public-repo-totals.svg"));
         string? githubStatsPath = ResolveOptionalReadmeImagePath(
-            options.GitHubStatsImagePathForReadme,
             readmePath,
             Path.Combine(options.CardsOutputDir, "github-stats.svg"));
 
@@ -650,32 +647,22 @@ internal static class Program
         return entries;
     }
 
-    private static string ResolveRequiredReadmeImagePath(string? configuredImagePath, string readmePath, string defaultImagePath)
+    private static string ResolveRequiredReadmeImagePath(string readmePath, string imagePath)
     {
-        if (!string.IsNullOrWhiteSpace(configuredImagePath))
-        {
-            return configuredImagePath!.Replace('\\', '/');
-        }
-
         string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
-        string relativePath = Path.GetRelativePath(readmeDirectory, defaultImagePath);
+        string relativePath = Path.GetRelativePath(readmeDirectory, imagePath);
         return relativePath.Replace('\\', '/');
     }
 
-    private static string? ResolveOptionalReadmeImagePath(string? configuredImagePath, string readmePath, string defaultImagePath)
+    private static string? ResolveOptionalReadmeImagePath(string readmePath, string imagePath)
     {
-        if (!string.IsNullOrWhiteSpace(configuredImagePath))
-        {
-            return configuredImagePath!.Replace('\\', '/');
-        }
-
-        if (!File.Exists(defaultImagePath))
+        if (!File.Exists(imagePath))
         {
             return null;
         }
 
         string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
-        string relativePath = Path.GetRelativePath(readmeDirectory, defaultImagePath);
+        string relativePath = Path.GetRelativePath(readmeDirectory, imagePath);
         return relativePath.Replace('\\', '/');
     }
 
