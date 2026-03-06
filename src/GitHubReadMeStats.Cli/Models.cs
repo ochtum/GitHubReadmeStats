@@ -397,3 +397,30 @@ internal sealed class TrafficHistoryDayValue
     [JsonPropertyName("uniques")]
     public int Uniques { get; init; }
 }
+
+internal sealed record ReadmeImagePaths(
+    string TopLanguages,
+    string? Stats,
+    string? PublicRepoTotals,
+    string? GitHubStats);
+
+internal sealed record ReadmeSectionMarkers(
+    string TopLanguagesStart,
+    string TopLanguagesEnd,
+    string StatsStart,
+    string StatsEnd,
+    string OwnPinsStart,
+    string OwnPinsEnd,
+    string ExternalPinsStart,
+    string ExternalPinsEnd);
+
+internal sealed record ReadmePinEntry(
+    string Owner,
+    string Name,
+    string RepositoryUrl,
+    string ImagePath,
+    bool IsOwnedByProfile);
+
+internal sealed record ReadmeUpdateResult(
+    bool Updated,
+    string Message);

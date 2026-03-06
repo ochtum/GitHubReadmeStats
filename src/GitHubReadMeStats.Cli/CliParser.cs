@@ -8,8 +8,14 @@ internal static class CliParser
     private const string DefaultOutputPath = "output";
     private const string DefaultLanguageCardFileName = "top-languages.svg";
     private const int DefaultTopCount = 6;
-    private const string DefaultStartMarker = "<!-- github-readme-stats:start -->";
-    private const string DefaultEndMarker = "<!-- github-readme-stats:end -->";
+    private const string DefaultTopLanguagesStartMarker = "<!-- github-readme-stats:start -->";
+    private const string DefaultTopLanguagesEndMarker = "<!-- github-readme-stats:end -->";
+    private const string DefaultStatsStartMarker = "<!-- github-readme-stats:stats:start -->";
+    private const string DefaultStatsEndMarker = "<!-- github-readme-stats:stats:end -->";
+    private const string DefaultOwnPinsStartMarker = "<!-- github-readme-stats:pins-own:start -->";
+    private const string DefaultOwnPinsEndMarker = "<!-- github-readme-stats:pins-own:end -->";
+    private const string DefaultExternalPinsStartMarker = "<!-- github-readme-stats:pins-external:start -->";
+    private const string DefaultExternalPinsEndMarker = "<!-- github-readme-stats:pins-external:end -->";
 
     public static CliParseResult Parse(string[] args)
     {
@@ -20,9 +26,19 @@ internal static class CliParser
         bool includeForks = false;
         bool includeArchived = false;
         string? updateReadmePath = null;
-        string startMarker = DefaultStartMarker;
-        string endMarker = DefaultEndMarker;
-        string? imagePathForReadme = null;
+        string topLanguagesStartMarker = DefaultTopLanguagesStartMarker;
+        string topLanguagesEndMarker = DefaultTopLanguagesEndMarker;
+        string statsStartMarker = DefaultStatsStartMarker;
+        string statsEndMarker = DefaultStatsEndMarker;
+        string ownPinsStartMarker = DefaultOwnPinsStartMarker;
+        string ownPinsEndMarker = DefaultOwnPinsEndMarker;
+        string externalPinsStartMarker = DefaultExternalPinsStartMarker;
+        string externalPinsEndMarker = DefaultExternalPinsEndMarker;
+        string? topLanguagesImagePathForReadme = null;
+        string? statsImagePathForReadme = null;
+        string? publicRepoTotalsImagePathForReadme = null;
+        string? githubStatsImagePathForReadme = null;
+        int pinsColumnsForReadme = 2;
         string? cardsConfigPath = null;
         string? cardsOutputDir = null;
 
@@ -74,21 +90,85 @@ internal static class CliParser
                 continue;
             }
 
-            if (TryParseInlineValue(arg, "--image-path", out string imagePathValue))
+            if (TryParseInlineValue(arg, "--top-languages-image-path", out string topLanguagesImagePathValue))
             {
-                imagePathForReadme = imagePathValue;
+                topLanguagesImagePathForReadme = topLanguagesImagePathValue;
                 continue;
             }
 
-            if (TryParseInlineValue(arg, "--start-marker", out string startMarkerValue))
+            if (TryParseInlineValue(arg, "--stats-image-path", out string statsImagePathValue))
             {
-                startMarker = startMarkerValue;
+                statsImagePathForReadme = statsImagePathValue;
                 continue;
             }
 
-            if (TryParseInlineValue(arg, "--end-marker", out string endMarkerValue))
+            if (TryParseInlineValue(arg, "--public-repo-totals-image-path", out string publicRepoTotalsImagePathValue))
             {
-                endMarker = endMarkerValue;
+                publicRepoTotalsImagePathForReadme = publicRepoTotalsImagePathValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--github-stats-image-path", out string githubStatsImagePathValue))
+            {
+                githubStatsImagePathForReadme = githubStatsImagePathValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--pins-columns", out string pinsColumnsValue))
+            {
+                if (!int.TryParse(pinsColumnsValue, out pinsColumnsForReadme))
+                {
+                    return new CliParseResult(null, $"--pins-columns expects integer value, but got: {pinsColumnsValue}", false, false);
+                }
+
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--top-languages-start-marker", out string topLanguagesStartMarkerValue))
+            {
+                topLanguagesStartMarker = topLanguagesStartMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--top-languages-end-marker", out string topLanguagesEndMarkerValue))
+            {
+                topLanguagesEndMarker = topLanguagesEndMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--stats-start-marker", out string statsStartMarkerValue))
+            {
+                statsStartMarker = statsStartMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--stats-end-marker", out string statsEndMarkerValue))
+            {
+                statsEndMarker = statsEndMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--pins-own-start-marker", out string ownPinsStartMarkerValue))
+            {
+                ownPinsStartMarker = ownPinsStartMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--pins-own-end-marker", out string ownPinsEndMarkerValue))
+            {
+                ownPinsEndMarker = ownPinsEndMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--pins-external-start-marker", out string externalPinsStartMarkerValue))
+            {
+                externalPinsStartMarker = externalPinsStartMarkerValue;
+                continue;
+            }
+
+            if (TryParseInlineValue(arg, "--pins-external-end-marker", out string externalPinsEndMarkerValue))
+            {
+                externalPinsEndMarker = externalPinsEndMarkerValue;
                 continue;
             }
 
@@ -171,27 +251,119 @@ internal static class CliParser
 
                     break;
 
-                case "--image-path":
-                    imagePathForReadme = ReadNextValue(args, ref i);
-                    if (imagePathForReadme is null)
+                case "--top-languages-image-path":
+                    topLanguagesImagePathForReadme = ReadNextValue(args, ref i);
+                    if (topLanguagesImagePathForReadme is null)
                     {
                         return new CliParseResult(null, $"{arg} requires a value.", false, false);
                     }
 
                     break;
 
-                case "--start-marker":
-                    startMarker = ReadNextValue(args, ref i) ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(startMarker))
+                case "--stats-image-path":
+                    statsImagePathForReadme = ReadNextValue(args, ref i);
+                    if (statsImagePathForReadme is null)
                     {
                         return new CliParseResult(null, $"{arg} requires a value.", false, false);
                     }
 
                     break;
 
-                case "--end-marker":
-                    endMarker = ReadNextValue(args, ref i) ?? string.Empty;
-                    if (string.IsNullOrWhiteSpace(endMarker))
+                case "--public-repo-totals-image-path":
+                    publicRepoTotalsImagePathForReadme = ReadNextValue(args, ref i);
+                    if (publicRepoTotalsImagePathForReadme is null)
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--github-stats-image-path":
+                    githubStatsImagePathForReadme = ReadNextValue(args, ref i);
+                    if (githubStatsImagePathForReadme is null)
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--pins-columns":
+                {
+                    string? pinsColumnsString = ReadNextValue(args, ref i);
+                    if (!int.TryParse(pinsColumnsString, out pinsColumnsForReadme))
+                    {
+                        return new CliParseResult(null, $"--pins-columns expects integer value, but got: {pinsColumnsString}", false, false);
+                    }
+
+                    break;
+                }
+
+                case "--top-languages-start-marker":
+                    topLanguagesStartMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(topLanguagesStartMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--top-languages-end-marker":
+                    topLanguagesEndMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(topLanguagesEndMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--stats-start-marker":
+                    statsStartMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(statsStartMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--stats-end-marker":
+                    statsEndMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(statsEndMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--pins-own-start-marker":
+                    ownPinsStartMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(ownPinsStartMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--pins-own-end-marker":
+                    ownPinsEndMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(ownPinsEndMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--pins-external-start-marker":
+                    externalPinsStartMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(externalPinsStartMarker))
+                    {
+                        return new CliParseResult(null, $"{arg} requires a value.", false, false);
+                    }
+
+                    break;
+
+                case "--pins-external-end-marker":
+                    externalPinsEndMarker = ReadNextValue(args, ref i) ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(externalPinsEndMarker))
                     {
                         return new CliParseResult(null, $"{arg} requires a value.", false, false);
                     }
@@ -233,9 +405,29 @@ internal static class CliParser
 
         string resolvedOutputPath = ResolveOutputPath(outputPath);
 
-        if (string.IsNullOrWhiteSpace(startMarker) || string.IsNullOrWhiteSpace(endMarker))
+        if (string.IsNullOrWhiteSpace(topLanguagesStartMarker) || string.IsNullOrWhiteSpace(topLanguagesEndMarker))
         {
-            return new CliParseResult(null, "--start-marker and --end-marker require non-empty values.", false, false);
+            return new CliParseResult(null, "--top-languages-start-marker and --top-languages-end-marker require non-empty values.", false, false);
+        }
+
+        if (string.IsNullOrWhiteSpace(statsStartMarker) || string.IsNullOrWhiteSpace(statsEndMarker))
+        {
+            return new CliParseResult(null, "--stats-start-marker and --stats-end-marker require non-empty values.", false, false);
+        }
+
+        if (string.IsNullOrWhiteSpace(ownPinsStartMarker) || string.IsNullOrWhiteSpace(ownPinsEndMarker))
+        {
+            return new CliParseResult(null, "--pins-own-start-marker and --pins-own-end-marker require non-empty values.", false, false);
+        }
+
+        if (string.IsNullOrWhiteSpace(externalPinsStartMarker) || string.IsNullOrWhiteSpace(externalPinsEndMarker))
+        {
+            return new CliParseResult(null, "--pins-external-start-marker and --pins-external-end-marker require non-empty values.", false, false);
+        }
+
+        if (pinsColumnsForReadme is < 1 or > 2)
+        {
+            return new CliParseResult(null, "--pins-columns must be 1 or 2.", false, false);
         }
 
         if (string.IsNullOrWhiteSpace(updateReadmePath))
@@ -277,9 +469,19 @@ internal static class CliParser
             includeForks,
             includeArchived,
             updateReadmePath,
-            startMarker,
-            endMarker,
-            imagePathForReadme,
+            topLanguagesStartMarker,
+            topLanguagesEndMarker,
+            statsStartMarker,
+            statsEndMarker,
+            ownPinsStartMarker,
+            ownPinsEndMarker,
+            externalPinsStartMarker,
+            externalPinsEndMarker,
+            topLanguagesImagePathForReadme,
+            statsImagePathForReadme,
+            publicRepoTotalsImagePathForReadme,
+            githubStatsImagePathForReadme,
+            pinsColumnsForReadme,
             cardsConfigPath,
             resolvedCardsOutputDir);
 
@@ -304,9 +506,19 @@ internal static class CliParser
             "      --include-forks             Include fork repositories\n" +
             "      --include-archived          Include archived repositories\n" +
             "      --update-readme <path>      Update markdown section in README\n" +
-            "      --image-path <path>         Image path used in README markdown\n" +
-            "      --start-marker <marker>     README section start marker\n" +
-            "      --end-marker <marker>       README section end marker\n" +
+            "      --top-languages-image-path <path>  Top-languages image path used in README markdown\n" +
+            "      --stats-image-path <path>   stats.svg path used in README markdown\n" +
+            "      --public-repo-totals-image-path <path> public-repo-totals.svg path used in README markdown\n" +
+            "      --github-stats-image-path <path> github-stats.svg path used in README markdown\n" +
+            "      --pins-columns <1|2>        Pin card columns in README markdown (default: 2)\n" +
+            "      --top-languages-start-marker <marker> top-languages section start marker\n" +
+            "      --top-languages-end-marker <marker> top-languages section end marker\n" +
+            "      --stats-start-marker <marker> stats section start marker\n" +
+            "      --stats-end-marker <marker> stats section end marker\n" +
+            "      --pins-own-start-marker <marker> own pins section start marker\n" +
+            "      --pins-own-end-marker <marker> own pins section end marker\n" +
+            "      --pins-external-start-marker <marker> external pins section start marker\n" +
+            "      --pins-external-end-marker <marker> external pins section end marker\n" +
             "      --cards-config <path>       JSON config for stats/pin card generation\n" +
             "      --cards-output-dir <path>   (Compatibility) Override cards output directory\n";
     }

@@ -21,7 +21,7 @@ For real-world usage, we recommend calling this tool from GitHub Actions in each
 - Aggregate Public repo Traffic/Fork/Watch/Star and generate `public-repo-totals.svg`
 - Generate per-repository cards as `pins/<owner>-<repo>.svg`
 - Configure language colors, language icons, and repository icons via `cards-config.json`
-- Accumulate daily Traffic data for each Public repository into `output/traffic-history.json` to support cumulative display
+- Accumulate daily Traffic data for repositories listed in `cards-config.json` `repositories` into `output/traffic-history.json` to support cumulative display
 - Automatically update a specific section in README (`--update-readme`)
 
 ### Tech Stack
@@ -82,7 +82,23 @@ Before running this in a profile repository, prepare the following.
 
 ## Quick Start (local)
 
-### 1. Install .NET SDK 10
+### 1. Clone this repository
+
+- Linux / WSL (bash):
+
+```bash
+git clone https://github.com/ochtum/GitHubReadmeStats.git
+cd GitHubReadmeStats
+```
+
+- Windows (PowerShell):
+
+```powershell
+git clone https://github.com/ochtum/GitHubReadmeStats.git
+Set-Location GitHubReadmeStats
+```
+
+### 2. Install .NET SDK 10
 
 - Running `dotnet` requires the .NET SDK.
 - Windows:
@@ -174,11 +190,24 @@ Notes:
 - `--include-forks`: Include fork repositories in aggregation
 - `--include-archived`: Include archived repositories in aggregation
 - `--update-readme`: Path of README to update
-- `--image-path`: Image path embedded in README
-- `--start-marker`: README section start marker
-- `--end-marker`: README section end marker
+- `--top-languages-image-path`: `top-languages.svg` image path embedded in README
+- `--stats-image-path`: `stats.svg` image path embedded in README
+- `--public-repo-totals-image-path`: `public-repo-totals.svg` image path embedded in README
+- `--github-stats-image-path`: `github-stats.svg` image path embedded in README
+- `--pins-columns`: Pin card columns in README (`1` or `2`, default: `2`)
+- `--top-languages-start-marker`: Top Languages section start marker
+- `--top-languages-end-marker`: Top Languages section end marker
+- `--stats-start-marker`: GitHub Stats section start marker
+- `--stats-end-marker`: GitHub Stats section end marker
+- `--pins-own-start-marker`: Own-repository pins section start marker
+- `--pins-own-end-marker`: Own-repository pins section end marker
+- `--pins-external-start-marker`: External-repository pins section start marker
+- `--pins-external-end-marker`: External-repository pins section end marker
 - `--cards-config`: JSON config for stats/pin card generation
 - `--cards-output-dir`: Compatibility override option. If omitted, parent directory of `--output` is used
+
+`--update-readme` updates each section only when its start/end markers already exist in README.  
+If markers are missing, that section is skipped and no new section is appended.
 
 ## Setup for Profile Repository
 
@@ -305,7 +334,7 @@ To preserve traffic accumulation, include `output/traffic-history.json` in the w
 - `top-languages` is aggregated from repositories owned by the executing token's `viewer`.
 - `pins` fetches each `owner/repo` specified in `cards-config.json` individually.
 - Private repositories without access permission cannot be fetched.
-- Traffic API only provides daily data for the last 14 days. By accumulating daily data in `output/traffic-history.json`, cards can display totals from the data collection start date onward.
+- Traffic API only provides daily data for the last 14 days. By accumulating daily data in `output/traffic-history.json` (stored only for repositories listed in `cards-config.json` `repositories`), cards can display totals from the data collection start date onward.
 - There is no API that can strictly reconstruct all-time unique cloners/visitors, so cumulative display is the sum of daily uniques.
 
 ## If You Want Scheduled Execution

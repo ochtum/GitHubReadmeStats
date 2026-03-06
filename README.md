@@ -21,7 +21,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - Public repoのTraffic/Fork/Watch/Starを集計し、`public-repo-totals.svg`を生成
 - 指定リポジトリの個別カード、`pins/<owner>-<repo>.svg`を生成
 - `cards-config.json` で言語色・言語アイコン・リポジトリアイコンを設定できます。
-- 各PublicリポジトリのTraffic 日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
+- `cards-config.json` の `repositories` で指定したリポジトリのTraffic日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
 - README の指定セクションを自動更新可能（`--update-readme`）
 
 ### Tech Stack
@@ -105,9 +105,25 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
-## Quick Start (local)
+## Quick Start (ローカルで実行する場合)
 
-### 1. .NET SDK 10 をインストール
+### 1. 本リポジトリをクローン
+
+- Linux / WSL (bash):
+
+```bash
+git clone https://github.com/ochtum/GitHubReadmeStats.git
+cd GitHubReadmeStats
+```
+
+- Windows (PowerShell):
+
+```powershell
+git clone https://github.com/ochtum/GitHubReadmeStats.git
+Set-Location GitHubReadmeStats
+```
+
+### 2. .NET SDK 10 をインストール
 
 - `dotnet` コマンドの実行には .NET SDK が必要です。
 - Windows:
@@ -199,11 +215,24 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 - `--include-forks`: fork を集計対象に含める
 - `--include-archived`: archived を集計対象に含める
 - `--update-readme`: README 更新対象パス
-- `--image-path`: README に埋め込む画像パス
-- `--start-marker`: README セクション開始マーカー
-- `--end-marker`: README セクション終了マーカー
+- `--top-languages-image-path`: README に埋め込む `top-languages.svg` 画像パス
+- `--stats-image-path`: README に埋め込む `stats.svg` 画像パス
+- `--public-repo-totals-image-path`: README に埋め込む `public-repo-totals.svg` 画像パス
+- `--github-stats-image-path`: README に埋め込む `github-stats.svg` 画像パス
+- `--pins-columns`: README の pins 表示列数 (`1` or `2`, default: `2`)
+- `--top-languages-start-marker`: Top Languages セクション開始マーカー
+- `--top-languages-end-marker`: Top Languages セクション終了マーカー
+- `--stats-start-marker`: GitHub Stats セクション開始マーカー
+- `--stats-end-marker`: GitHub Stats セクション終了マーカー
+- `--pins-own-start-marker`: 自分IDリポジトリ pins セクション開始マーカー
+- `--pins-own-end-marker`: 自分IDリポジトリ pins セクション終了マーカー
+- `--pins-external-start-marker`: 外部リポジトリ pins セクション開始マーカー
+- `--pins-external-end-marker`: 外部リポジトリ pins セクション終了マーカー
 - `--cards-config`: stats/pin カード生成設定 JSON
 - `--cards-output-dir`: 互換用の上書きオプション。未指定時は `--output` の親ディレクトリを使用
+
+`--update-readme` は各セクションの start/end マーカーが README に存在する場合のみ更新します。  
+マーカーが見つからないセクションは追記せず、そのセクションのみスキップします。
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
 
@@ -336,7 +365,7 @@ Traffic累積を維持するには、workflow の commit 対象に `output/traff
 - `top-languages` 集計対象は、実行トークンの `viewer` が所有するリポジトリです。
 - `pins` は `cards-config.json` で指定した `owner/repo` を個別取得します。
 - アクセス権のない private repo は取得できません。
-- Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json` に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
+- Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json`（`cards-config.json` の `repositories` 指定分のみ保持）に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
 - `Unique cloners/visitors` の全期間ユニーク人数を厳密に復元するAPIはないため、累積表示は「日次 uniques の合算」です。
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)

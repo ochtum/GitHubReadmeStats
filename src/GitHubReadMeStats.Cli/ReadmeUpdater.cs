@@ -1,102 +1,233 @@
-using System.Globalization;
 using System.Text;
 
 namespace GitHubReadMeStats.Cli;
 
 internal static class ReadmeUpdater
 {
-    public static async Task UpdateAsync(
+    public static async Task<ReadmeUpdateResult> UpdateAsync(
         string readmePath,
-        string startMarker,
-        string endMarker,
-        string imagePath,
-        AggregationResult aggregation,
-        int topCount,
-        DateTimeOffset generatedAtUtc,
-        TimeDisplaySettings timeDisplay,
+        ReadmeSectionMarkers markers,
+        ReadmeImagePaths imagePaths,
+        IReadOnlyList<ReadmePinEntry> pins,
+        int pinsColumns,
         CancellationToken cancellationToken = default)
     {
         string original = File.Exists(readmePath)
             ? await File.ReadAllTextAsync(readmePath, cancellationToken)
             : string.Empty;
 
-        string section = BuildSection(startMarker, endMarker, imagePath, aggregation, topCount, generatedAtUtc, timeDisplay);
+        string current = original;
+        bool updatedAnySection = false;
+        var updatedSections = new List<string>();
+        var skippedSections = new List<string>();
 
-        string updated;
-        int startIndex = original.IndexOf(startMarker, StringComparison.Ordinal);
-        int endIndex = original.IndexOf(endMarker, StringComparison.Ordinal);
+        List<ReadmePinEntry> ownPins = pins.Where(x => x.IsOwnedByProfile).ToList();
+        List<ReadmePinEntry> externalPins = pins.Where(x => !x.IsOwnedByProfile).ToList();
 
-        if (startIndex >= 0 && endIndex >= 0 && endIndex > startIndex)
+        var sections = new[]
         {
-            int afterEnd = endIndex + endMarker.Length;
-            string before = original[..startIndex].TrimEnd();
-            string after = original[afterEnd..].TrimStart();
+            new ReadmeSectionUpdate(
+                "top-languages",
+                markers.TopLanguagesStart,
+                markers.TopLanguagesEnd,
+                BuildTopLanguagesSectionBody(imagePaths)),
+            new ReadmeSectionUpdate(
+                "stats",
+                markers.StatsStart,
+                markers.StatsEnd,
+                BuildStatsSectionBody(imagePaths)),
+            new ReadmeSectionUpdate(
+                "pins-own",
+                markers.OwnPinsStart,
+                markers.OwnPinsEnd,
+                BuildPinsSectionBody(ownPins, pinsColumns)),
+            new ReadmeSectionUpdate(
+                "pins-external",
+                markers.ExternalPinsStart,
+                markers.ExternalPinsEnd,
+                BuildPinsSectionBody(externalPins, pinsColumns)),
+        };
 
-            var builder = new StringBuilder();
-            if (!string.IsNullOrWhiteSpace(before))
-            {
-                builder.AppendLine(before);
-                builder.AppendLine();
-            }
-
-            builder.AppendLine(section.TrimEnd());
-
-            if (!string.IsNullOrWhiteSpace(after))
-            {
-                builder.AppendLine();
-                builder.AppendLine(after);
-            }
-
-            updated = builder.ToString();
-        }
-        else
+        foreach (ReadmeSectionUpdate section in sections)
         {
-            var builder = new StringBuilder(original.TrimEnd());
-            if (builder.Length > 0)
+            SectionReplaceResult replaceResult = ReplaceMarkedSection(
+                current,
+                section.StartMarker,
+                section.EndMarker,
+                section.Body);
+
+            if (!replaceResult.Found)
             {
-                builder.AppendLine();
-                builder.AppendLine();
+                skippedSections.Add($"{section.Name}: {replaceResult.Message}");
+                continue;
             }
 
-            builder.AppendLine(section.TrimEnd());
-            updated = builder.ToString();
+            current = replaceResult.Markdown;
+            if (replaceResult.Changed)
+            {
+                updatedAnySection = true;
+                updatedSections.Add(section.Name);
+            }
         }
 
-        await File.WriteAllTextAsync(readmePath, updated + Environment.NewLine, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken);
+        if (!updatedAnySection)
+        {
+            string skipSummary = BuildSummary(updatedSections, skippedSections);
+            return new ReadmeUpdateResult(false, skipSummary);
+        }
+
+        await File.WriteAllTextAsync(readmePath, current, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken);
+        string updateSummary = BuildSummary(updatedSections, skippedSections);
+        return new ReadmeUpdateResult(true, updateSummary);
     }
 
-    private static string BuildSection(
-        string startMarker,
-        string endMarker,
-        string imagePath,
-        AggregationResult aggregation,
-        int topCount,
-        DateTimeOffset generatedAtUtc,
-        TimeDisplaySettings timeDisplay)
+    private static string BuildTopLanguagesSectionBody(ReadmeImagePaths imagePaths)
     {
-        IReadOnlyList<AggregatedLanguage> topLanguages = aggregation.Languages.Take(topCount).ToList();
-        DateTimeOffset generatedAtLocal = TimeZoneInfo.ConvertTime(generatedAtUtc, timeDisplay.TimeZone);
+        var sb = new StringBuilder();
+        sb.AppendLine("<div align=\"center\">");
+        sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.TopLanguages}\" alt=\"top-languages\" />");
+        sb.AppendLine("</div>");
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string BuildStatsSectionBody(ReadmeImagePaths imagePaths)
+    {
+        bool hasAnyStatsImage =
+            !string.IsNullOrWhiteSpace(imagePaths.GitHubStats) ||
+            !string.IsNullOrWhiteSpace(imagePaths.Stats) ||
+            !string.IsNullOrWhiteSpace(imagePaths.PublicRepoTotals);
+
+        if (!hasAnyStatsImage)
+        {
+            return string.Empty;
+        }
 
         var sb = new StringBuilder();
-        sb.AppendLine(startMarker);
-        sb.AppendLine("## GitHub Readme Stats");
-        sb.AppendLine();
-        sb.AppendLine($"![Top Languages]({imagePath})");
-        sb.AppendLine();
-        sb.AppendLine("| Rank | Language | Size | Share |");
-        sb.AppendLine("| ---: | :-- | ---: | ---: |");
+        sb.AppendLine("<div align=\"center\">");
 
-        for (int i = 0; i < topLanguages.Count; i++)
+        bool hasTopRow =
+            !string.IsNullOrWhiteSpace(imagePaths.GitHubStats) ||
+            !string.IsNullOrWhiteSpace(imagePaths.Stats);
+
+        if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats) && !string.IsNullOrWhiteSpace(imagePaths.Stats))
         {
-            AggregatedLanguage language = topLanguages[i];
-            sb.AppendLine($"| {i + 1} | {language.Name} | {SvgRenderer.ToHumanReadableBytes(language.Size)} | {language.Percent.ToString("0.00", CultureInfo.InvariantCulture)}% |");
+            sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
+            sb.AppendLine($"  <img width=\"49%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
+        }
+        else if (!string.IsNullOrWhiteSpace(imagePaths.GitHubStats))
+        {
+            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.GitHubStats}\" alt=\"github-stats\" />");
+        }
+        else if (!string.IsNullOrWhiteSpace(imagePaths.Stats))
+        {
+            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.Stats}\" alt=\"stats\" />");
         }
 
-        sb.AppendLine();
-        sb.AppendLine($"_Updated: {generatedAtLocal:yyyy-MM-dd HH:mm} {timeDisplay.Label}_  ");
-        sb.AppendLine($"_Repositories: {aggregation.IncludedRepositoryCount} / {aggregation.ScannedRepositoryCount} (included/scanned)_");
-        sb.AppendLine(endMarker);
+        if (!string.IsNullOrWhiteSpace(imagePaths.PublicRepoTotals))
+        {
+            if (hasTopRow)
+            {
+                sb.AppendLine("  <br />");
+            }
 
+            sb.AppendLine($"  <img width=\"100%\" src=\"{imagePaths.PublicRepoTotals}\" alt=\"public-repo-totals\" />");
+        }
+
+        sb.AppendLine("</div>");
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string BuildPinsSectionBody(IReadOnlyList<ReadmePinEntry> pins, int pinsColumns)
+    {
+        if (pins.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder();
+
+        int columns = Math.Clamp(pinsColumns, 1, 2);
+        string width = columns == 1 ? "100%" : "49%";
+
+        for (int i = 0; i < pins.Count; i += columns)
+        {
+            sb.AppendLine("<p align=\"center\">");
+            for (int j = i; j < Math.Min(i + columns, pins.Count); j++)
+            {
+                ReadmePinEntry pin = pins[j];
+                sb.AppendLine($"  <a href=\"{pin.RepositoryUrl}\"><img width=\"{width}\" src=\"{pin.ImagePath}\" alt=\"{pin.Name}\" /></a>");
+            }
+
+            sb.AppendLine("</p>");
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static SectionReplaceResult ReplaceMarkedSection(
+        string markdown,
+        string startMarker,
+        string endMarker,
+        string body)
+    {
+        int startIndex = markdown.IndexOf(startMarker, StringComparison.Ordinal);
+        if (startIndex < 0)
+        {
+            return new SectionReplaceResult(
+                markdown,
+                Found: false,
+                Changed: false,
+                Message: $"start marker not found ({startMarker})");
+        }
+
+        int endIndex = markdown.IndexOf(endMarker, startIndex + startMarker.Length, StringComparison.Ordinal);
+        if (endIndex < 0 || endIndex <= startIndex)
+        {
+            return new SectionReplaceResult(
+                markdown,
+                Found: false,
+                Changed: false,
+                Message: $"end marker not found ({endMarker})");
+        }
+
+        string replacement = BuildMarkedSection(startMarker, endMarker, body);
+        string updated =
+            markdown[..startIndex] +
+            replacement +
+            markdown[(endIndex + endMarker.Length)..];
+
+        bool changed = !string.Equals(markdown, updated, StringComparison.Ordinal);
+        return new SectionReplaceResult(updated, Found: true, changed, Message: changed ? "updated" : "no changes");
+    }
+
+    private static string BuildMarkedSection(string startMarker, string endMarker, string body)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine(startMarker);
+        if (!string.IsNullOrWhiteSpace(body))
+        {
+            sb.AppendLine(body.TrimEnd());
+        }
+
+        sb.Append(endMarker);
         return sb.ToString();
     }
+
+    private static string BuildSummary(IReadOnlyList<string> updatedSections, IReadOnlyList<string> skippedSections)
+    {
+        string updated = updatedSections.Count == 0
+            ? "updated sections: none"
+            : $"updated sections: {string.Join(", ", updatedSections)}";
+
+        if (skippedSections.Count == 0)
+        {
+            return updated;
+        }
+
+        return $"{updated}; skipped: {string.Join(" | ", skippedSections)}";
+    }
+
+    private sealed record ReadmeSectionUpdate(string Name, string StartMarker, string EndMarker, string Body);
+    private sealed record SectionReplaceResult(string Markdown, bool Found, bool Changed, string Message);
 }

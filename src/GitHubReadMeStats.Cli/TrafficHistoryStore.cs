@@ -88,6 +88,27 @@ internal sealed class TrafficHistoryStore
             updated);
     }
 
+    public void KeepOnlyRepositories(IEnumerable<string> repositoryKeys)
+    {
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string key in repositoryKeys)
+        {
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                allowed.Add(key.Trim());
+            }
+        }
+
+        string[] existingKeys = _state.Repositories.Keys.ToArray();
+        foreach (string key in existingKeys)
+        {
+            if (!allowed.Contains(key))
+            {
+                _state.Repositories.Remove(key);
+            }
+        }
+    }
+
     public async Task SaveAsync(string path, CancellationToken cancellationToken = default)
     {
         string? directory = Path.GetDirectoryName(path);

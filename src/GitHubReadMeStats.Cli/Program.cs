@@ -88,19 +88,26 @@ internal static class Program
             if (!string.IsNullOrWhiteSpace(options.UpdateReadmePath))
             {
                 string readmePath = options.UpdateReadmePath!;
-                string imagePathForReadme = ResolveReadmeImagePath(options, readmePath);
+                string profileOwner = cardsConfig?.Username ?? repositoriesResult.ViewerLogin;
+                ReadmeImagePaths readmeImagePaths = ResolveReadmeImagePaths(options, readmePath);
+                ReadmeSectionMarkers readmeSectionMarkers = ResolveReadmeSectionMarkers(options);
+                IReadOnlyList<ReadmePinEntry> readmePins = ResolveReadmePinEntries(options, readmePath, cardsConfig, profileOwner);
 
-                await ReadmeUpdater.UpdateAsync(
+                ReadmeUpdateResult updateResult = await ReadmeUpdater.UpdateAsync(
                     readmePath,
-                    options.ReadmeSectionStartMarker,
-                    options.ReadmeSectionEndMarker,
-                    imagePathForReadme,
-                    aggregation,
-                    options.Top,
-                    generatedAtUtc,
-                    timeDisplay);
+                    readmeSectionMarkers,
+                    readmeImagePaths,
+                    readmePins,
+                    options.PinsColumnsForReadme);
 
-                Console.WriteLine($"Updated README section: {readmePath}");
+                if (updateResult.Updated)
+                {
+                    Console.WriteLine($"Updated README section: {readmePath}");
+                }
+                else
+                {
+                    Console.WriteLine($"Skipped README update: {updateResult.Message}");
+                }
             }
 
             return 0;
@@ -142,6 +149,11 @@ internal static class Program
 
         string trafficHistoryPath = Path.Combine(options.CardsOutputDir, "traffic-history.json");
         TrafficHistoryStore trafficHistory = TrafficHistoryStore.Load(trafficHistoryPath);
+        string[] configuredTrafficRepositoryKeys = config.Repositories
+            .Select(repo => $"{repo.Owner}/{repo.Name}")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        trafficHistory.KeepOnlyRepositories(configuredTrafficRepositoryKeys);
 
         var trafficTotalsCache = new Dictionary<string, RepositoryTrafficTotals?>(StringComparer.OrdinalIgnoreCase);
         var unavailableTrafficKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -293,6 +305,7 @@ internal static class Program
             generatedPinCount++;
         }
 
+        trafficHistory.KeepOnlyRepositories(configuredTrafficRepositoryKeys);
         await trafficHistory.SaveAsync(trafficHistoryPath);
         Console.WriteLine($"Updated traffic history: {trafficHistoryPath}");
         if (unavailableTrafficKeys.Count > 0)
@@ -559,15 +572,110 @@ internal static class Program
         return sanitized.ToString();
     }
 
-    private static string ResolveReadmeImagePath(CliOptions options, string readmePath)
+    private static ReadmeImagePaths ResolveReadmeImagePaths(CliOptions options, string readmePath)
     {
-        if (!string.IsNullOrWhiteSpace(options.ImagePathForReadme))
+        string topLanguagesPath = ResolveRequiredReadmeImagePath(options.TopLanguagesImagePathForReadme, readmePath, options.OutputPath);
+        string? statsPath = ResolveOptionalReadmeImagePath(
+            options.StatsImagePathForReadme,
+            readmePath,
+            Path.Combine(options.CardsOutputDir, "stats.svg"));
+        string? publicRepoTotalsPath = ResolveOptionalReadmeImagePath(
+            options.PublicRepoTotalsImagePathForReadme,
+            readmePath,
+            Path.Combine(options.CardsOutputDir, "public-repo-totals.svg"));
+        string? githubStatsPath = ResolveOptionalReadmeImagePath(
+            options.GitHubStatsImagePathForReadme,
+            readmePath,
+            Path.Combine(options.CardsOutputDir, "github-stats.svg"));
+
+        return new ReadmeImagePaths(
+            topLanguagesPath,
+            statsPath,
+            publicRepoTotalsPath,
+            githubStatsPath);
+    }
+
+    private static ReadmeSectionMarkers ResolveReadmeSectionMarkers(CliOptions options)
+    {
+        return new ReadmeSectionMarkers(
+            options.TopLanguagesSectionStartMarker,
+            options.TopLanguagesSectionEndMarker,
+            options.StatsSectionStartMarker,
+            options.StatsSectionEndMarker,
+            options.OwnPinsSectionStartMarker,
+            options.OwnPinsSectionEndMarker,
+            options.ExternalPinsSectionStartMarker,
+            options.ExternalPinsSectionEndMarker);
+    }
+
+    private static IReadOnlyList<ReadmePinEntry> ResolveReadmePinEntries(
+        CliOptions options,
+        string readmePath,
+        CardsConfig? cardsConfig,
+        string profileOwner)
+    {
+        if (cardsConfig is null || cardsConfig.Repositories.Count == 0)
         {
-            return options.ImagePathForReadme!.Replace('\\', '/');
+            return Array.Empty<ReadmePinEntry>();
         }
 
         string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
-        string relativePath = Path.GetRelativePath(readmeDirectory, options.OutputPath);
+        string pinDirectory = Path.Combine(options.CardsOutputDir, "pins");
+
+        var entries = new List<ReadmePinEntry>();
+        var dedupe = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (PinRepository repo in cardsConfig.Repositories)
+        {
+            string key = $"{repo.Owner}/{repo.Name}";
+            if (!dedupe.Add(key))
+            {
+                continue;
+            }
+
+            string pinFileName = $"{SanitizePathSegment(repo.Owner)}-{SanitizePathSegment(repo.Name)}.svg";
+            string pinPath = Path.Combine(pinDirectory, pinFileName);
+            if (!File.Exists(pinPath))
+            {
+                continue;
+            }
+
+            string imagePath = Path.GetRelativePath(readmeDirectory, pinPath).Replace('\\', '/');
+            string repositoryUrl = $"https://github.com/{repo.Owner}/{repo.Name}";
+            bool isOwnedByProfile = string.Equals(repo.Owner, profileOwner, StringComparison.OrdinalIgnoreCase);
+
+            entries.Add(new ReadmePinEntry(repo.Owner, repo.Name, repositoryUrl, imagePath, isOwnedByProfile));
+        }
+
+        return entries;
+    }
+
+    private static string ResolveRequiredReadmeImagePath(string? configuredImagePath, string readmePath, string defaultImagePath)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredImagePath))
+        {
+            return configuredImagePath!.Replace('\\', '/');
+        }
+
+        string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
+        string relativePath = Path.GetRelativePath(readmeDirectory, defaultImagePath);
+        return relativePath.Replace('\\', '/');
+    }
+
+    private static string? ResolveOptionalReadmeImagePath(string? configuredImagePath, string readmePath, string defaultImagePath)
+    {
+        if (!string.IsNullOrWhiteSpace(configuredImagePath))
+        {
+            return configuredImagePath!.Replace('\\', '/');
+        }
+
+        if (!File.Exists(defaultImagePath))
+        {
+            return null;
+        }
+
+        string readmeDirectory = Path.GetDirectoryName(readmePath) ?? ".";
+        string relativePath = Path.GetRelativePath(readmeDirectory, defaultImagePath);
         return relativePath.Replace('\\', '/');
     }
 
