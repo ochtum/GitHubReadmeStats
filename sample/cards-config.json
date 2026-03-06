@@ -1,0 +1,8 @@
+{
+  "username": "your-github-id",
+  "repositories": [
+    "your-github-id/your-repo-1",
+    "your-github-id/your-repo-2",
+    "microsoft/vscode-generator-code"
+  ]
+}
