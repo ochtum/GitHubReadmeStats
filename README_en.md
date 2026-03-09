@@ -21,7 +21,7 @@ For real-world usage, we recommend calling this tool from GitHub Actions in each
 - Aggregate Public repo Traffic/Fork/Watch/Star and generate `public-repo-totals.svg`
 - Generate per-repository cards as `pins/<owner>-<repo>.svg`
 - Configure language colors, language icons, and repository icons via `cards-config.json`
-- Accumulate daily Traffic data for repositories listed in `cards-config.json` `repositories` into `output/traffic-history.json` to support cumulative display
+- Accumulate daily Traffic data for repositories listed in `cards-config.json` `repositories` and the public repos included in `public-repo-totals` into `output/traffic-history.json` to support cumulative display
 - Automatically update a specific section in README (`--update-readme`)
 
 Practical README auto-update example: [README_AUTO_UPDATE_EXAMPLE_en.md](./README_AUTO_UPDATE_EXAMPLE_en.md)
@@ -51,7 +51,7 @@ Theme gallery: [theme-sample.md](./theme-sample.md)
 - Classic PAT: Grant `repo` for easier handling including private repositories.
 - Fine-grained PAT: Grant `Contents: Read` to required repositories for the target user.
 - If you want to show traffic metrics on repository cards, Fine-grained PAT also requires `Administration: Read` (GitHub Traffic API requirement).
-- Include all repositories where traffic metrics are needed in Fine-grained PAT `Repository access` (all target repos in `cards-config.json`).
+- Include all repositories where traffic metrics are needed in Fine-grained PAT `Repository access` (all target repos in `cards-config.json` and the public repos you want included in `public-repo-totals`).
 - If you aggregate or generate cards for private repositories, the token must have access to those private repositories.
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
@@ -144,6 +144,7 @@ When `--cards-config` is specified, `github-stats.svg`, `stats.svg`, `public-rep
   "theme": "indigo-night",
   "displayTimeZone": "Asia/Tokyo",
   "displayTimeZoneLabel": "JST",
+  "excludeProfileRepositoryFromPublicTotals": false,
   "languageColors": {
     "JavaScript": "#f1e05a",
     "TypeScript": "oklch(0.72 0.16 248)"
@@ -182,6 +183,7 @@ Notes:
 - `repositories[].icon`: Repository icon setting (supports paths relative to `cards-config.json`, absolute paths, `https://...`, and `data:image/...`)
 - `displayTimeZone`: Time zone used for `updated` timestamps (defaults to `UTC`)
 - `displayTimeZoneLabel`: Display label (e.g., `JST`; when omitted, auto-determined as `UTC` / `UTC+09:00` / `Asia/Tokyo`, etc.)
+- `excludeProfileRepositoryFromPublicTotals`: When `true`, excludes the profile repository (`<user>/<user>`) from `public-repo-totals`. Defaults to `false`
 
 ### CLI Options
 
@@ -335,7 +337,7 @@ To preserve traffic accumulation, include `output/traffic-history.json` in the w
 - `top-languages` is aggregated from repositories owned by the executing token's `viewer`.
 - `pins` fetches each `owner/repo` specified in `cards-config.json` individually.
 - Private repositories without access permission cannot be fetched.
-- Traffic API only provides daily data for the last 14 days. By accumulating daily data in `output/traffic-history.json` (stored only for repositories listed in `cards-config.json` `repositories`), cards can display totals from the data collection start date onward.
+- Traffic API only provides daily data for the last 14 days. By accumulating daily data in `output/traffic-history.json` (stored for repositories listed in `cards-config.json` `repositories` and the public repos included in `public-repo-totals`), cards can display totals from the data collection start date onward.
 - There is no API that can strictly reconstruct all-time unique cloners/visitors, so cumulative display is the sum of daily uniques.
 
 ## If You Want Scheduled Execution

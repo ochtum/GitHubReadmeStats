@@ -155,13 +155,20 @@ internal static class Program
         string pinOutputDir = Path.Combine(options.CardsOutputDir, "pins");
         Directory.CreateDirectory(pinOutputDir);
 
+        List<RepositoryNode> publicRepositories = repositoriesResult.Repositories
+            .Where(repo => !repo.IsPrivate && !repo.IsFork)
+            .Where(repo => !config.ExcludeProfileRepositoryFromPublicTotals || !IsProfileRepository(repo, repositoriesResult.ViewerLogin))
+            .ToList();
+
         string trafficHistoryPath = Path.Combine(options.CardsOutputDir, "traffic-history.json");
         TrafficHistoryStore trafficHistory = TrafficHistoryStore.Load(trafficHistoryPath);
-        string[] configuredTrafficRepositoryKeys = config.Repositories
+        string[] retainedTrafficRepositoryKeys = config.Repositories
             .Select(repo => $"{repo.Owner}/{repo.Name}")
+            .Concat(publicRepositories.Select(repo => repo.NameWithOwner))
+            .Where(key => !string.IsNullOrWhiteSpace(key))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
-        trafficHistory.KeepOnlyRepositories(configuredTrafficRepositoryKeys);
+        trafficHistory.KeepOnlyRepositories(retainedTrafficRepositoryKeys);
 
         var trafficTotalsCache = new Dictionary<string, RepositoryTrafficTotals?>(StringComparer.OrdinalIgnoreCase);
         var unavailableTrafficKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -195,10 +202,6 @@ internal static class Program
             trafficTotalsCache[key] = trafficTotals;
             return trafficTotals;
         }
-
-        List<RepositoryNode> publicRepositories = repositoriesResult.Repositories
-            .Where(repo => !repo.IsPrivate && !repo.IsFork)
-            .ToList();
 
         long totalForks = 0;
         long totalWatchers = 0;
@@ -317,7 +320,7 @@ internal static class Program
             generatedPinCount++;
         }
 
-        trafficHistory.KeepOnlyRepositories(configuredTrafficRepositoryKeys);
+        trafficHistory.KeepOnlyRepositories(retainedTrafficRepositoryKeys);
         await trafficHistory.SaveAsync(trafficHistoryPath);
         Console.WriteLine($"Updated traffic history: {trafficHistoryPath}");
         if (unavailableTrafficKeys.Count > 0)
@@ -564,6 +567,17 @@ internal static class Program
         owner = parts[0];
         name = parts[1];
         return true;
+    }
+
+    private static bool IsProfileRepository(RepositoryNode repository, string viewerLogin)
+    {
+        if (string.IsNullOrWhiteSpace(viewerLogin) || string.IsNullOrWhiteSpace(repository.NameWithOwner))
+        {
+            return false;
+        }
+
+        string profileRepository = $"{viewerLogin}/{viewerLogin}";
+        return string.Equals(repository.NameWithOwner, profileRepository, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string SanitizePathSegment(string value)

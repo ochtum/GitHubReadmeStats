@@ -22,6 +22,7 @@ internal static class CardsConfigLoader
         string? theme = ReadTheme(root);
         string? displayTimeZone = ReadDisplayTimeZone(root);
         string? displayTimeZoneLabel = ReadDisplayTimeZoneLabel(root);
+        bool excludeProfileRepositoryFromPublicTotals = ReadExcludeProfileRepositoryFromPublicTotals(root);
 
         return new CardsConfig(
             username,
@@ -31,7 +32,8 @@ internal static class CardsConfigLoader
             mainColor,
             theme,
             displayTimeZone,
-            displayTimeZoneLabel);
+            displayTimeZoneLabel,
+            excludeProfileRepositoryFromPublicTotals);
     }
 
     private static string ReadUsername(JsonElement root, string defaultUsername)
@@ -176,6 +178,18 @@ internal static class CardsConfigLoader
             ?? ReadStringProperty(root, "timezoneLabel"));
     }
 
+    private static bool ReadExcludeProfileRepositoryFromPublicTotals(JsonElement root)
+    {
+        return ReadBooleanProperty(
+            root,
+            "excludeProfileRepositoryFromPublicTotals",
+            "exclude_profile_repository_from_public_totals",
+            "exclude-profile-repository-from-public-totals",
+            "excludeProfileRepository",
+            "exclude_profile_repository",
+            "exclude-profile-repository");
+    }
+
     private static PinRepository? ParseRepository(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.String)
@@ -287,5 +301,35 @@ internal static class CardsConfigLoader
         }
 
         return value.Trim();
+    }
+
+    private static bool ReadBooleanProperty(JsonElement root, params string[] propertyNames)
+    {
+        foreach (string propertyName in propertyNames)
+        {
+            if (!root.TryGetProperty(propertyName, out JsonElement element))
+            {
+                continue;
+            }
+
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.True:
+                    return true;
+
+                case JsonValueKind.False:
+                    return false;
+
+                case JsonValueKind.String:
+                    if (bool.TryParse(element.GetString(), out bool parsed))
+                    {
+                        return parsed;
+                    }
+
+                    break;
+            }
+        }
+
+        return false;
     }
 }

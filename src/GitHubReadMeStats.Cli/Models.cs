@@ -300,7 +300,8 @@ internal sealed record CardsConfig(
     string? MainColor,
     string? Theme,
     string? DisplayTimeZone,
-    string? DisplayTimeZoneLabel);
+    string? DisplayTimeZoneLabel,
+    bool ExcludeProfileRepositoryFromPublicTotals);
 
 internal sealed record TimeDisplaySettings(TimeZoneInfo TimeZone, string Label);
 

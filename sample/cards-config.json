@@ -1,6 +1,7 @@
 {
   "username": "your-github-id",
   "theme": "indigo-night",
+  "excludeProfileRepositoryFromPublicTotals": false,
   "repositories": [
     "your-github-id/your-repo-1",
     "your-github-id/your-repo-2",

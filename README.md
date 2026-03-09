@@ -21,7 +21,7 @@ GitHub GraphQL API を使って、プロフィール README 向けの SVG を自
 - Public repoのTraffic/Fork/Watch/Starを集計し、`public-repo-totals.svg`を生成
 - 指定リポジトリの個別カード、`pins/<owner>-<repo>.svg`を生成
 - `cards-config.json` で言語色・言語アイコン・リポジトリアイコンを設定できます。
-- `cards-config.json` の `repositories` で指定したリポジトリのTraffic日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
+- `cards-config.json` の `repositories` と `public-repo-totals` 集計対象 public repo のTraffic日次データを `output/traffic-history.json` に蓄積し、累積表示をサポートします。
 - README の指定セクションを自動更新可能（`--update-readme`）
 
 README自動更新の実践例: [README_AUTO_UPDATE_EXAMPLE.md](./README_AUTO_UPDATE_EXAMPLE.md)
@@ -76,7 +76,7 @@ README自動更新の実践例: [README_AUTO_UPDATE_EXAMPLE.md](./README_AUTO_UP
 - Classic PAT: `repo` を付与すると private repo を含めて扱いやすいです。
 - Fine-grained PAT: 実行対象ユーザーの必要なリポジトリに `Contents: Read` を付与してください。
 - リポジトリ card に traffic 指標を表示する場合、Fine-grained PAT では `Administration: Read` も必要です（GitHub Traffic API 要件）。
-- traffic 指標を表示したいリポジトリは、Fine-grained PAT の `Repository access` に含めてください（`cards-config.json` の対象 repo すべて）。
+- traffic 指標を表示したいリポジトリは、Fine-grained PAT の `Repository access` に含めてください（`cards-config.json` の対象 repo と `public-repo-totals` に含めたい public repo）。
 - private repo を集計/カード化する場合は、その private repo への参照権限が必要です。
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
@@ -169,6 +169,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
   "theme": "indigo-night",
   "displayTimeZone": "Asia/Tokyo",
   "displayTimeZoneLabel": "JST",
+  "excludeProfileRepositoryFromPublicTotals": false,
   "languageColors": {
     "JavaScript": "#f1e05a",
     "TypeScript": "oklch(0.72 0.16 248)"
@@ -207,6 +208,7 @@ dotnet run --project src/GitHubReadMeStats.Cli/GitHubReadMeStats.Cli.csproj -- `
 - `repositories[].icon`: アイコン指定（`cards-config.json` からの相対パス、絶対パス、`https://...`、`data:image/...` をサポート）
 - `displayTimeZone`: `updated` 表示時刻のタイムゾーン（未指定時は `UTC`）
 - `displayTimeZoneLabel`: 表示ラベル（例: `JST`。未指定時は `UTC` / `UTC+09:00` / `Asia/Tokyo` などを自動決定）
+- `excludeProfileRepositoryFromPublicTotals`: `true` で profile repo (`<user>/<user>`) を `public-repo-totals` の集計対象から外す。既定は `false`
 
 ### CLI Options
 
@@ -366,7 +368,7 @@ Traffic累積を維持するには、workflow の commit 対象に `output/traff
 - `top-languages` 集計対象は、実行トークンの `viewer` が所有するリポジトリです。
 - `pins` は `cards-config.json` で指定した `owner/repo` を個別取得します。
 - アクセス権のない private repo は取得できません。
-- Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json`（`cards-config.json` の `repositories` 指定分のみ保持）に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
+- Traffic API は直近 14 日の日次データしか取得できません。`output/traffic-history.json`（`cards-config.json` の `repositories` と `public-repo-totals` 集計対象 public repo を保持）に日次を積み上げることで、カードには「収集開始日以降」の累積を表示します。
 - `Unique cloners/visitors` の全期間ユニーク人数を厳密に復元するAPIはないため、累積表示は「日次 uniques の合算」です。
 
 ![Section divider](./assets/dividers/divider-blue-solid-bold.svg)
